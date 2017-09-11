@@ -29,6 +29,7 @@ static ngx_str_t  *ngx_sys_errlist;
 static ngx_str_t   ngx_unknown_error = ngx_string("Unknown error");
 
 
+/* 错误信息，复制到缓冲区errstr */
 u_char *
 ngx_strerror(ngx_err_t err, u_char *errstr, size_t size)
 {
@@ -42,6 +43,7 @@ ngx_strerror(ngx_err_t err, u_char *errstr, size_t size)
 }
 
 
+/* 初始化标准错误 */
 ngx_uint_t
 ngx_strerror_init(void)
 {
@@ -57,11 +59,12 @@ ngx_strerror_init(void)
 
     len = NGX_SYS_NERR * sizeof(ngx_str_t);
 
-    ngx_sys_errlist = malloc(len);
+    ngx_sys_errlist = malloc(len);//分配错误列表
     if (ngx_sys_errlist == NULL) {
         goto failed;
     }
 
+	/* 把0-124错误码转换成errmsg,存储到ngx_sys_errlist中 */
     for (err = 0; err < NGX_SYS_NERR; err++) {
         msg = strerror(err);
         len = ngx_strlen(msg);

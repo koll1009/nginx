@@ -126,7 +126,7 @@ ngx_snprintf(u_char *buf, size_t max, const char *fmt, ...)
     return p;
 }
 
-
+/* nginx格式化字符串 */
 u_char * ngx_cdecl
 ngx_slprintf(u_char *buf, u_char *last, const char *fmt, ...)
 {
@@ -141,6 +141,7 @@ ngx_slprintf(u_char *buf, u_char *last, const char *fmt, ...)
 }
 
 
+/* 格式化字符串,@args为变参列表 */
 u_char *
 ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 {
@@ -167,7 +168,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
             i64 = 0;
             ui64 = 0;
 
-            zero = (u_char) ((*++fmt == '0') ? '0' : ' ');
+            zero = (u_char) ((*++fmt == '0') ? '0' : ' ');//补齐字符，'0'字符或者空格字符
             width = 0;
             sign = 1;
             hex = 0;
@@ -175,47 +176,47 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
             frac_width = 0;
             slen = (size_t) -1;
 
-            while (*fmt >= '0' && *fmt <= '9') {
+            while (*fmt >= '0' && *fmt <= '9') {//输出长度
                 width = width * 10 + *fmt++ - '0';
             }
 
 
-            for ( ;; ) {
+            for ( ;; ) {//此为修饰类型
                 switch (*fmt) {
 
-                case 'u':
+                case 'u'://无符号数
                     sign = 0;
                     fmt++;
                     continue;
 
-                case 'm':
+                case 'm'://以最大长度来转换数字类型
                     max_width = 1;
                     fmt++;
                     continue;
 
-                case 'X':
+                case 'X'://以大写16进制类型来显示数据
                     hex = 2;
                     sign = 0;
                     fmt++;
                     continue;
 
-                case 'x':
+                case 'x'://以小写16进制类型来显示数据
                     hex = 1;
                     sign = 0;
                     fmt++;
                     continue;
 
-                case '.':
+                case '.'://小数点，后跟浮点数小数位长度
                     fmt++;
 
-                    while (*fmt >= '0' && *fmt <= '9') {
+                    while (*fmt >= '0' && *fmt <= '9') {//小数部分
                         frac_width = frac_width * 10 + *fmt++ - '0';
                     }
 
                     break;
 
                 case '*':
-                    slen = va_arg(args, size_t);
+                    slen = va_arg(args, size_t);//表示要转换的字符串长度，目前与%s配对，例如%*s
                     fmt++;
                     continue;
 
@@ -227,18 +228,18 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
             }
 
 
-            switch (*fmt) {
+            switch (*fmt) {//此为格式化类型
 
-            case 'V':
+            case 'V':/* ngx_str_t类型 */
                 v = va_arg(args, ngx_str_t *);
 
                 len = ngx_min(((size_t) (last - buf)), v->len);
-                buf = ngx_cpymem(buf, v->data, len);
+                buf = ngx_cpymem(buf, v->data, len);//以最小长度复制
                 fmt++;
 
                 continue;
 
-            case 'v':
+            case 'v':/* ngx_variable_value_t* 参数类型 */
                 vv = va_arg(args, ngx_variable_value_t *);
 
                 len = ngx_min(((size_t) (last - buf)), vv->len);
@@ -247,10 +248,10 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 
                 continue;
 
-            case 's':
+            case 's':/* c字符串 */
                 p = va_arg(args, u_char *);
 
-                if (slen == (size_t) -1) {
+                if (slen == (size_t) -1) {/* c字符串未指定长度 */
                     while (*p && buf < last) {
                         *buf++ = *p++;
                     }
@@ -264,22 +265,22 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 
                 continue;
 
-            case 'O':
+            case 'O':/* 64位有符号整数 */
                 i64 = (int64_t) va_arg(args, off_t);
                 sign = 1;
                 break;
 
-            case 'P':
+            case 'P':/* 进程id */
                 i64 = (int64_t) va_arg(args, ngx_pid_t);
                 sign = 1;
                 break;
 
-            case 'T':
+            case 'T':/* 时间 */
                 i64 = (int64_t) va_arg(args, time_t);
                 sign = 1;
                 break;
 
-            case 'M':
+            case 'M':/* 秒，32位 */
                 ms = (ngx_msec_t) va_arg(args, ngx_msec_t);
                 if ((ngx_msec_int_t) ms == -1) {
                     sign = 1;
@@ -356,7 +357,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 
                 break;
 
-            case 'f':
+            case 'f':/* 浮点数 */
                 f = va_arg(args, double);
 
                 if (f < 0) {
@@ -366,7 +367,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
 
                 ui64 = (int64_t) f;
 
-                buf = ngx_sprintf_num(buf, last, ui64, zero, 0, width);
+                buf = ngx_sprintf_num(buf, last, ui64, zero, 0, width);/* 把整数部分转换成字符串 */
 
                 if (frac_width) {
 
@@ -384,7 +385,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
                      * (int64_t) cast is required for msvc6:
                      * it cannot convert uint64_t to double
                      */
-                    ui64 = (uint64_t) ((f - (int64_t) ui64) * scale + 0.5);
+                    ui64 = (uint64_t) ((f - (int64_t) ui64) * scale + 0.5);//小数部分放大成整数
 
                     buf = ngx_sprintf_num(buf, last, ui64, '0', 0, frac_width);
                 }
@@ -442,6 +443,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
                 continue;
             }
 
+			//统一处理整型
             if (sign) {
                 if (i64 < 0) {
                     *buf++ = '-';
@@ -464,7 +466,7 @@ ngx_vslprintf(u_char *buf, u_char *last, const char *fmt, va_list args)
     return buf;
 }
 
-
+/* 把整型转换成字符串 */
 static u_char *
 ngx_sprintf_num(u_char *buf, u_char *last, uint64_t ui64, u_char zero,
     ngx_uint_t hexadecimal, ngx_uint_t width)
@@ -481,7 +483,7 @@ ngx_sprintf_num(u_char *buf, u_char *last, uint64_t ui64, u_char zero,
 
     p = temp + NGX_INT64_LEN;
 
-    if (hexadecimal == 0) {
+    if (hexadecimal == 0) {//是否为16进制类型
 
         if (ui64 <= NGX_MAX_UINT32_VALUE) {
 
@@ -503,7 +505,7 @@ ngx_sprintf_num(u_char *buf, u_char *last, uint64_t ui64, u_char zero,
             ui32 = (uint32_t) ui64;
 
             do {
-                *--p = (u_char) (ui32 % 10 + '0');
+                *--p = (u_char) (ui32 % 10 + '0');//缓冲区倒序使用，正好和除余计算结合
             } while (ui32 /= 10);
 
         } else {
@@ -533,9 +535,9 @@ ngx_sprintf_num(u_char *buf, u_char *last, uint64_t ui64, u_char zero,
 
     /* zero or space padding */
 
-    len = (temp + NGX_INT64_LEN) - p;
+    len = (temp + NGX_INT64_LEN) - p;/* 转换后的长度 */
 
-    while (len++ < width && buf < last) {
+    while (len++ < width && buf < last) {/* fill填充字符 */
         *buf++ = zero;
     }
 

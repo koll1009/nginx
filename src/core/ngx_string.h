@@ -4,7 +4,7 @@
  * Copyright (C) Nginx, Inc.
  */
 
-
+/* nginx字符串， */
 #ifndef _NGX_STRING_H_INCLUDED_
 #define _NGX_STRING_H_INCLUDED_
 
@@ -12,10 +12,10 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/* 字符串描述符 */
 typedef struct {
-    size_t      len;
-    u_char     *data;
+    size_t      len;//长度
+    u_char     *data;//首地址
 } ngx_str_t;
 
 
@@ -90,7 +90,7 @@ ngx_strlchr(u_char *p, u_char *last, u_char c)
 #if (NGX_MEMCPY_LIMIT)
 
 void *ngx_memcpy(void *dst, void *src, size_t n);
-#define ngx_cpymem(dst, src, n)   (((u_char *) ngx_memcpy(dst, src, n)) + (n))
+#define ngx_cpymem(dst, src, n)   (((u_char *) ngx_memcpy(dst, src, n)) + (n))//复制内存，并把指针位移到末端
 
 #else
 

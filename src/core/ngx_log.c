@@ -202,23 +202,24 @@ ngx_log_abort(ngx_err_t err, const char *fmt, ...)
 }
 
 
+/* 输出日志到标准错误流stderr */
 void ngx_cdecl
 ngx_log_stderr(ngx_err_t err, const char *fmt, ...)
 {
     u_char   *p, *last;
     va_list   args;
-    u_char    errstr[NGX_MAX_ERROR_STR];
+    u_char    errstr[NGX_MAX_ERROR_STR];//错误信息最大2048个字节
 
-    last = errstr + NGX_MAX_ERROR_STR;
+    last = errstr + NGX_MAX_ERROR_STR; 
     p = errstr + 7;
 
-    ngx_memcpy(errstr, "nginx: ", 7);
+    ngx_memcpy(errstr, "nginx: ", 7);//日志信息以"nginx: "开头
 
     va_start(args, fmt);
-    p = ngx_vslprintf(p, last, fmt, args);
+    p = ngx_vslprintf(p, last, fmt, args);//格式化
     va_end(args);
 
-    if (err) {
+    if (err) {//打印错误码信息
         p = ngx_log_errno(p, last, err);
     }
 
@@ -226,16 +227,16 @@ ngx_log_stderr(ngx_err_t err, const char *fmt, ...)
         p = last - NGX_LINEFEED_SIZE;
     }
 
-    ngx_linefeed(p);
+    ngx_linefeed(p);//添加换行符
 
-    (void) ngx_write_console(ngx_stderr, errstr, p - errstr);
+    (void) ngx_write_console(ngx_stderr, errstr, p - errstr);//输出到标准错误流
 }
 
-
+/* 打印错误码信息 */
 u_char *
 ngx_log_errno(u_char *buf, u_char *last, ngx_err_t err)
 {
-    if (buf > last - 50) {
+    if (buf > last - 50) {//如果空间不足50个字节，就需要覆盖前面的格式化信息
 
         /* leave a space for an error code */
 
