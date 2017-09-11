@@ -45,8 +45,9 @@
 typedef u_char *(*ngx_log_handler_pt) (ngx_log_t *log, u_char *buf, size_t len);
 
 
+//日志文件结构
 struct ngx_log_s {
-    ngx_uint_t           log_level;
+    ngx_uint_t           log_level;//日志级别
     ngx_open_file_t     *file;
 
     ngx_atomic_uint_t    connection;

@@ -184,12 +184,12 @@ ngx_module_t  ngx_core_module = {
 
 ngx_uint_t          ngx_max_module;
 
-static ngx_uint_t   ngx_show_help;
-static ngx_uint_t   ngx_show_version;
-static ngx_uint_t   ngx_show_configure;
-static u_char      *ngx_prefix;
-static u_char      *ngx_conf_file;
-static u_char      *ngx_conf_params;
+static ngx_uint_t   ngx_show_help;       //显示帮助命令
+static ngx_uint_t   ngx_show_version;    //显示版本号
+static ngx_uint_t   ngx_show_configure;  //显示配置信息
+static u_char      *ngx_prefix;          //前置路径
+static u_char      *ngx_conf_file;       //配置文件路径
+static u_char      *ngx_conf_params;     //配置参数串 
 static char        *ngx_signal;
 
 
@@ -208,18 +208,18 @@ main(int argc, char *const *argv)
     ngx_debug_init();
 #endif
 
-    if (ngx_strerror_init() != NGX_OK) {
+    if (ngx_strerror_init() != NGX_OK) {//初始化标准错误
         return 1;
     }
 
-    if (ngx_get_options(argc, argv) != NGX_OK) {
+    if (ngx_get_options(argc, argv) != NGX_OK) {//解析输入参数
         return 1;
     }
 
     if (ngx_show_version) {
-        ngx_write_stderr("nginx version: " NGINX_VER NGX_LINEFEED);
+        ngx_write_stderr("nginx version: " NGINX_VER NGX_LINEFEED);//显示版本号
 
-        if (ngx_show_help) {
+        if (ngx_show_help) {//显示帮助信息
             ngx_write_stderr(
                 "Usage: nginx [-?hvVtq] [-s signal] [-c filename] "
                              "[-p prefix] [-g directives]" NGX_LINEFEED
@@ -269,15 +269,15 @@ main(int argc, char *const *argv)
 
     /* TODO */ ngx_max_sockets = -1;
 
-    ngx_time_init();
+    ngx_time_init();//初始化时间
 
 #if (NGX_PCRE)
     ngx_regex_init();
 #endif
 
-    ngx_pid = ngx_getpid();
+    ngx_pid = ngx_getpid();//获取进程号
 
-    log = ngx_log_init(ngx_prefix);
+    log = ngx_log_init(ngx_prefix);//初始化日志文件
     if (log == NULL) {
         return 1;
     }
@@ -662,7 +662,7 @@ ngx_exec_new_binary(ngx_cycle_t *cycle, char *const *argv)
     return pid;
 }
 
-
+/* 解析输入参数 */
 static ngx_int_t
 ngx_get_options(int argc, char *const *argv)
 {
@@ -673,7 +673,7 @@ ngx_get_options(int argc, char *const *argv)
 
         p = (u_char *) argv[i];
 
-        if (*p++ != '-') {
+        if (*p++ != '-') {//输入参数要以'-'开头
             ngx_log_stderr(0, "invalid option: \"%s\"", argv[i]);
             return NGX_ERROR;
         }
@@ -683,16 +683,16 @@ ngx_get_options(int argc, char *const *argv)
             switch (*p++) {
 
             case '?':
-            case 'h':
+            case 'h'://显示版本号和帮助
                 ngx_show_version = 1;
                 ngx_show_help = 1;
                 break;
 
-            case 'v':
+            case 'v'://显示版本号
                 ngx_show_version = 1;
                 break;
 
-            case 'V':
+            case 'V'://显示版本号和配置路径
                 ngx_show_version = 1;
                 ngx_show_configure = 1;
                 break;
@@ -705,7 +705,7 @@ ngx_get_options(int argc, char *const *argv)
                 ngx_quiet_mode = 1;
                 break;
 
-            case 'p':
+            case 'p'://-p 后跟前置路径，有两种模式 -pPath或-p Path
                 if (*p) {
                     ngx_prefix = p;
                     goto next;
@@ -719,7 +719,7 @@ ngx_get_options(int argc, char *const *argv)
                 ngx_log_stderr(0, "option \"-p\" requires directory name");
                 return NGX_ERROR;
 
-            case 'c':
+            case 'c'://配置文件路径
                 if (*p) {
                     ngx_conf_file = p;
                     goto next;
@@ -733,7 +733,7 @@ ngx_get_options(int argc, char *const *argv)
                 ngx_log_stderr(0, "option \"-c\" requires file name");
                 return NGX_ERROR;
 
-            case 'g':
+            case 'g'://输入参数
                 if (*p) {
                     ngx_conf_params = p;
                     goto next;
@@ -747,7 +747,7 @@ ngx_get_options(int argc, char *const *argv)
                 ngx_log_stderr(0, "option \"-g\" requires parameter");
                 return NGX_ERROR;
 
-            case 's':
+            case 's'://
                 if (*p) {
                     ngx_signal = (char *) p;
 

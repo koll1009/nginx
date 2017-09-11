@@ -56,6 +56,7 @@ static char  *week[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
 static char  *months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
+//初始化时间
 void
 ngx_time_init(void)
 {
@@ -70,6 +71,7 @@ ngx_time_init(void)
 }
 
 
+/* 更新时间 */
 void
 ngx_time_update(void)
 {
@@ -80,26 +82,26 @@ ngx_time_update(void)
     ngx_time_t      *tp;
     struct timeval   tv;
 
-    if (!ngx_trylock(&ngx_time_lock)) {
+    if (!ngx_trylock(&ngx_time_lock)) {//原子操作，避免多个线程同时执行该函数
         return;
     }
 
-    ngx_gettimeofday(&tv);
+    ngx_gettimeofday(&tv);//取得当前时间
 
     sec = tv.tv_sec;
     msec = tv.tv_usec / 1000;
 
-    ngx_current_msec = (ngx_msec_t) sec * 1000 + msec;
+    ngx_current_msec = (ngx_msec_t) sec * 1000 + msec;//当前的时间以毫秒为单位表示
 
     tp = &cached_time[slot];
 
-    if (tp->sec == sec) {
+    if (tp->sec == sec) {//如果秒数一样，则只更新毫秒数
         tp->msec = msec;
         ngx_unlock(&ngx_time_lock);
         return;
     }
 
-    if (slot == NGX_TIME_SLOTS - 1) {
+    if (slot == NGX_TIME_SLOTS - 1) {//取下一个缓冲时间
         slot = 0;
     } else {
         slot++;
@@ -110,10 +112,10 @@ ngx_time_update(void)
     tp->sec = sec;
     tp->msec = msec;
 
-    ngx_gmtime(sec, &gmt);
+    ngx_gmtime(sec, &gmt);//转换为日期
 
 
-    p0 = &cached_http_time[slot][0];
+    p0 = &cached_http_time[slot][0];//把日期格式化成不同的形式
 
     (void) ngx_sprintf(p0, "%s, %02d %s %4d %02d:%02d:%02d GMT",
                        week[gmt.ngx_tm_wday], gmt.ngx_tm_mday,
@@ -275,6 +277,7 @@ ngx_http_cookie_time(u_char *buf, time_t t)
 }
 
 
+//转换成时间
 void
 ngx_gmtime(time_t t, ngx_tm_t *tp)
 {
@@ -285,7 +288,7 @@ ngx_gmtime(time_t t, ngx_tm_t *tp)
 
     n = (ngx_uint_t) t;
 
-    days = n / 86400;
+    days = n / 86400;//天数
 
     /* January 1, 1970 was Thursday */
 

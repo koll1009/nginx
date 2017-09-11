@@ -263,16 +263,16 @@ ngx_log_errno(u_char *buf, u_char *last, ngx_err_t err)
 }
 
 
-ngx_log_t *
-ngx_log_init(u_char *prefix)
+/* 初始化日志文件 */
+ngx_log_t * ngx_log_init(u_char *prefix)
 {
     u_char  *p, *name;
     size_t   nlen, plen;
 
     ngx_log.file = &ngx_log_file;
-    ngx_log.log_level = NGX_LOG_NOTICE;
+    ngx_log.log_level = NGX_LOG_NOTICE;//日志级别
 
-    name = (u_char *) NGX_ERROR_LOG_PATH;
+    name = (u_char *) NGX_ERROR_LOG_PATH;//错误日志文件名
 
     /*
      * we use ngx_strlen() here since BCC warns about
@@ -314,7 +314,7 @@ ngx_log_init(u_char *prefix)
 
             p = ngx_cpymem(name, prefix, plen);
 
-            if (!ngx_path_separator(*(p - 1))) {
+            if (!ngx_path_separator(*(p - 1))) {//如果前置路径未以分隔符结尾，则自动添加
                 *p++ = '/';
             }
 
@@ -326,7 +326,7 @@ ngx_log_init(u_char *prefix)
 
     ngx_log_file.fd = ngx_open_file(name, NGX_FILE_APPEND,
                                     NGX_FILE_CREATE_OR_OPEN,
-                                    NGX_FILE_DEFAULT_ACCESS);
+                                    NGX_FILE_DEFAULT_ACCESS);//打开文件
 
     if (ngx_log_file.fd == NGX_INVALID_FILE) {
         ngx_log_stderr(ngx_errno,

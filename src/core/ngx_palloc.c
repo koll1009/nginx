@@ -13,23 +13,24 @@ static void *ngx_palloc_block(ngx_pool_t *pool, size_t size);
 static void *ngx_palloc_large(ngx_pool_t *pool, size_t size);
 
 
+/* 创建一个内存池，每个内存池的一个结点上部分为控制结构，下半部为可用字节 */
 ngx_pool_t *
 ngx_create_pool(size_t size, ngx_log_t *log)
 {
     ngx_pool_t  *p;
 
-    p = ngx_memalign(NGX_POOL_ALIGNMENT, size, log);
+    p = ngx_memalign(NGX_POOL_ALIGNMENT, size, log);//默认以16对齐内存，分配
     if (p == NULL) {
         return NULL;
     }
 
-    p->d.last = (u_char *) p + sizeof(ngx_pool_t);
+    p->d.last = (u_char *) p + sizeof(ngx_pool_t);//可
     p->d.end = (u_char *) p + size;
     p->d.next = NULL;
     p->d.failed = 0;
 
     size = size - sizeof(ngx_pool_t);
-    p->max = (size < NGX_MAX_ALLOC_FROM_POOL) ? size : NGX_MAX_ALLOC_FROM_POOL;
+    p->max = (size < NGX_MAX_ALLOC_FROM_POOL) ? size : NGX_MAX_ALLOC_FROM_POOL;//单次分配不可大于一个内存页大小
 
     p->current = p;
     p->chain = NULL;
@@ -113,20 +114,21 @@ ngx_reset_pool(ngx_pool_t *pool)
 }
 
 
+/* 分配内存 */
 void *
 ngx_palloc(ngx_pool_t *pool, size_t size)
 {
     u_char      *m;
     ngx_pool_t  *p;
 
-    if (size <= pool->max) {
+    if (size <= pool->max) {//未超出上限值，从内存池分配
 
         p = pool->current;
 
         do {
-            m = ngx_align_ptr(p->d.last, NGX_ALIGNMENT);
+            m = ngx_align_ptr(p->d.last, NGX_ALIGNMENT);//先把内存对其
 
-            if ((size_t) (p->d.end - m) >= size) {
+            if ((size_t) (p->d.end - m) >= size) {//遍历内存池的每个内存节点，直到找出充足的内存
                 p->d.last = m + size;
 
                 return m;
@@ -136,7 +138,7 @@ ngx_palloc(ngx_pool_t *pool, size_t size)
 
         } while (p);
 
-        return ngx_palloc_block(pool, size);
+        return ngx_palloc_block(pool, size);//分配一个新的内粗节点
     }
 
     return ngx_palloc_large(pool, size);
@@ -173,6 +175,7 @@ ngx_pnalloc(ngx_pool_t *pool, size_t size)
 }
 
 
+/* 新建一个内存池结点 */
 static void *
 ngx_palloc_block(ngx_pool_t *pool, size_t size)
 {
@@ -200,7 +203,7 @@ ngx_palloc_block(ngx_pool_t *pool, size_t size)
     current = pool->current;
 
     for (p = current; p->d.next; p = p->d.next) {
-        if (p->d.failed++ > 4) {
+        if (p->d.failed++ > 4) {//分配失败超过5次，则把current
             current = p->d.next;
         }
     }
