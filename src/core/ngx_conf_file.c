@@ -60,6 +60,7 @@ static ngx_uint_t argument_number[] = {
 };
 
 
+/* 解析输入的配置参数 */
 char *
 ngx_conf_param(ngx_conf_t *cf)
 {
@@ -70,13 +71,13 @@ ngx_conf_param(ngx_conf_t *cf)
 
     param = &cf->cycle->conf_param;
 
-    if (param->len == 0) {
+    if (param->len == 0) {//无
         return NGX_CONF_OK;
     }
 
     ngx_memzero(&conf_file, sizeof(ngx_conf_file_t));
 
-    ngx_memzero(&b, sizeof(ngx_buf_t));
+    ngx_memzero(&b, sizeof(ngx_buf_t));//解析过程使用的缓冲区
 
     b.start = param->data;
     b.pos = param->data;
@@ -91,14 +92,14 @@ ngx_conf_param(ngx_conf_t *cf)
     cf->conf_file = &conf_file;
     cf->conf_file->buffer = &b;
 
-    rv = ngx_conf_parse(cf, NULL);
+    rv = ngx_conf_parse(cf, NULL);//解析
 
     cf->conf_file = NULL;
 
     return rv;
 }
 
-
+/* 配置内容解析 */
 char *
 ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 {
@@ -118,11 +119,11 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
     prev = NULL;
 #endif
 
-    if (filename) {
+    if (filename) {//
 
         /* open configuration file */
 
-        fd = ngx_open_file(filename->data, NGX_FILE_RDONLY, NGX_FILE_OPEN, 0);
+        fd = ngx_open_file(filename->data, NGX_FILE_RDONLY, NGX_FILE_OPEN, 0);//打开配置文件
         if (fd == NGX_INVALID_FILE) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, ngx_errno,
                                ngx_open_file_n " \"%s\" failed",

@@ -30,21 +30,22 @@ static ngx_os_io_t ngx_linux_io = {
 };
 
 
+/* linux系统初始化 */
 ngx_int_t
 ngx_os_specific_init(ngx_log_t *log)
 {
     struct utsname  u;
 
-    if (uname(&u) == -1) {
+    if (uname(&u) == -1) {//获取主机和操作系统信息
         ngx_log_error(NGX_LOG_ALERT, log, ngx_errno, "uname() failed");
         return NGX_ERROR;
     }
 
     (void) ngx_cpystrn(ngx_linux_kern_ostype, (u_char *) u.sysname,
-                       sizeof(ngx_linux_kern_ostype));
+                       sizeof(ngx_linux_kern_ostype));//操作系统名
 
     (void) ngx_cpystrn(ngx_linux_kern_osrelease, (u_char *) u.release,
-                       sizeof(ngx_linux_kern_osrelease));
+                       sizeof(ngx_linux_kern_osrelease));//os版本号
 
 #if (NGX_HAVE_RTSIG)
     {
@@ -56,7 +57,7 @@ ngx_os_specific_init(ngx_log_t *log)
     name[1] = KERN_RTSIGMAX;
     len = sizeof(ngx_linux_rtsig_max);
 
-    if (sysctl(name, 2, &ngx_linux_rtsig_max, &len, NULL, 0) == -1) {
+    if (sysctl(name, 2, &ngx_linux_rtsig_max, &len, NULL, 0) == -1) {//最大可排队数量
         err = ngx_errno;
 
         if (err != NGX_ENOTDIR && err != NGX_ENOSYS) {
@@ -72,7 +73,7 @@ ngx_os_specific_init(ngx_log_t *log)
     }
 #endif
 
-    ngx_os_io = ngx_linux_io;
+    ngx_os_io = ngx_linux_io;//io函数
 
     return NGX_OK;
 }

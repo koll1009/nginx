@@ -301,7 +301,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-    if (ngx_save_argv(&init_cycle, argc, argv) != NGX_OK) {
+    if (ngx_save_argv(&init_cycle, argc, argv) != NGX_OK) {//保存输入参数
         return 1;
     }
 
@@ -309,7 +309,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-    if (ngx_os_init(log) != NGX_OK) {
+    if (ngx_os_init(log) != NGX_OK) {//系统初始化
         return 1;
     }
 
@@ -325,6 +325,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
+	//模块编号
     ngx_max_module = 0;
     for (i = 0; ngx_modules[i]; i++) {
         ngx_modules[i]->index = ngx_max_module++;
@@ -423,7 +424,7 @@ ngx_add_inherited_sockets(ngx_cycle_t *cycle)
     ngx_int_t         s;
     ngx_listening_t  *ls;
 
-    inherited = (u_char *) getenv(NGINX_VAR);
+    inherited = (u_char *) getenv(NGINX_VAR);//
 
     if (inherited == NULL) {
         return NGX_OK;
@@ -433,7 +434,7 @@ ngx_add_inherited_sockets(ngx_cycle_t *cycle)
                   "using inherited sockets from \"%s\"", inherited);
 
     if (ngx_array_init(&cycle->listening, cycle->pool, 10,
-                       sizeof(ngx_listening_t))
+                       sizeof(ngx_listening_t))//初始化监听数组
         != NGX_OK)
     {
         return NGX_ERROR;
@@ -441,7 +442,7 @@ ngx_add_inherited_sockets(ngx_cycle_t *cycle)
 
     for (p = inherited, v = p; *p; p++) {
         if (*p == ':' || *p == ';') {
-            s = ngx_atoi(v, p - v);
+            s = ngx_atoi(v, p - v);//socket fd
             if (s == NGX_ERROR) {
                 ngx_log_error(NGX_LOG_EMERG, cycle->log, 0,
                               "invalid socket number \"%s\" in " NGINX_VAR
@@ -459,13 +460,13 @@ ngx_add_inherited_sockets(ngx_cycle_t *cycle)
 
             ngx_memzero(ls, sizeof(ngx_listening_t));
 
-            ls->fd = (ngx_socket_t) s;
+            ls->fd = (ngx_socket_t) s;//
         }
     }
 
     ngx_inherited = 1;
 
-    return ngx_set_inherited_sockets(cycle);
+    return ngx_set_inherited_sockets(cycle);//设置继承的socket
 }
 
 
@@ -786,6 +787,7 @@ ngx_get_options(int argc, char *const *argv)
 }
 
 
+/* 保存输入参数 */
 static ngx_int_t
 ngx_save_argv(ngx_cycle_t *cycle, int argc, char *const *argv)
 {
@@ -807,7 +809,7 @@ ngx_save_argv(ngx_cycle_t *cycle, int argc, char *const *argv)
         return NGX_ERROR;
     }
 
-    for (i = 0; i < argc; i++) {
+    for (i = 0; i < argc; i++) {//逐一分配并复制参数内容
         len = ngx_strlen(argv[i]) + 1;
 
         ngx_argv[i] = ngx_alloc(len, cycle->log);
@@ -822,7 +824,7 @@ ngx_save_argv(ngx_cycle_t *cycle, int argc, char *const *argv)
 
 #endif
 
-    ngx_os_environ = environ;
+    ngx_os_environ = environ;//环境
 
     return NGX_OK;
 }
@@ -924,12 +926,13 @@ ngx_process_options(ngx_cycle_t *cycle)
 }
 
 
+/* ngx_core_module模块上下文的create_conf方法 */
 static void *
 ngx_core_module_create_conf(ngx_cycle_t *cycle)
 {
     ngx_core_conf_t  *ccf;
 
-    ccf = ngx_pcalloc(cycle->pool, sizeof(ngx_core_conf_t));
+    ccf = ngx_pcalloc(cycle->pool, sizeof(ngx_core_conf_t));//新建ngx_core_conf_t
     if (ccf == NULL) {
         return NULL;
     }
@@ -943,7 +946,7 @@ ngx_core_module_create_conf(ngx_cycle_t *cycle)
      *     ccf->cpu_affinity_n = 0;
      *     ccf->cpu_affinity = NULL;
      */
-
+	//初始化
     ccf->daemon = NGX_CONF_UNSET;
     ccf->master = NGX_CONF_UNSET;
     ccf->timer_resolution = NGX_CONF_UNSET_MSEC;

@@ -1,4 +1,4 @@
-
+﻿
 /*
  * Copyright (C) Igor Sysoev
  * Copyright (C) Nginx, Inc.
@@ -29,27 +29,35 @@ ngx_os_io_t ngx_os_io = {
 };
 
 
+/* 系统初始化 */
 ngx_int_t
 ngx_os_init(ngx_log_t *log)
 {
     ngx_uint_t  n;
 
 #if (NGX_HAVE_OS_SPECIFIC_INIT)
-    if (ngx_os_specific_init(log) != NGX_OK) {
+    if (ngx_os_specific_init(log) != NGX_OK) {//不同平台的初始化
         return NGX_ERROR;
     }
 #endif
 
     ngx_init_setproctitle(log);
 
-    ngx_pagesize = getpagesize();
-    ngx_cacheline_size = NGX_CPU_CACHE_LINE;
+    ngx_pagesize = getpagesize();//获取内存页大小
+    ngx_cacheline_size = NGX_CPU_CACHE_LINE;//cpu缓存行大小
 
     for (n = ngx_pagesize; n >>= 1; ngx_pagesize_shift++) { /* void */ }
 
 #if (NGX_HAVE_SC_NPROCESSORS_ONLN)
+	/*  
+	* - _SC_NPROCESSORS_CONF 
+	*       The number of processors configured. 
+	*  
+	* - _SC_NPROCESSORS_ONLN 
+	*       The number of processors currently online (available). 
+	*/  
     if (ngx_ncpu == 0) {
-        ngx_ncpu = sysconf(_SC_NPROCESSORS_ONLN);
+        ngx_ncpu = sysconf(_SC_NPROCESSORS_ONLN);//cpu个数 cpu
     }
 #endif
 
@@ -57,9 +65,9 @@ ngx_os_init(ngx_log_t *log)
         ngx_ncpu = 1;
     }
 
-    ngx_cpuinfo();
+    ngx_cpuinfo();//cpu信息
 
-    if (getrlimit(RLIMIT_NOFILE, &rlmt) == -1) {
+    if (getrlimit(RLIMIT_NOFILE, &rlmt) == -1) {//进程的文件数限制
         ngx_log_error(NGX_LOG_ALERT, log, errno,
                       "getrlimit(RLIMIT_NOFILE) failed)");
         return NGX_ERROR;

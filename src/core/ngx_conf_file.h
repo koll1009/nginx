@@ -108,20 +108,21 @@ struct ngx_open_file_s {
 #define NGX_MODULE_V1          0, 0, 0, 0, 0, 0, 1
 #define NGX_MODULE_V1_PADDING  0, 0, 0, 0, 0, 0, 0, 0
 
+/* module结构体 */
 struct ngx_module_s {
-    ngx_uint_t            ctx_index;
-    ngx_uint_t            index;
+    ngx_uint_t            ctx_index;//上下文索引
+    ngx_uint_t            index;//同一类型的索引
 
     ngx_uint_t            spare0;
     ngx_uint_t            spare1;
     ngx_uint_t            spare2;
     ngx_uint_t            spare3;
 
-    ngx_uint_t            version;
+    ngx_uint_t            version;//
 
-    void                 *ctx;
+    void                 *ctx; //指向不同模块类型的上下文
     ngx_command_t        *commands;
-    ngx_uint_t            type;
+    ngx_uint_t            type;//类型，
 
     ngx_int_t           (*init_master)(ngx_log_t *log);
 
@@ -144,14 +145,14 @@ struct ngx_module_s {
     uintptr_t             spare_hook7;
 };
 
-
+/* core module类型上下文 */
 typedef struct {
     ngx_str_t             name;
     void               *(*create_conf)(ngx_cycle_t *cycle);
     char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);
 } ngx_core_module_t;
 
-
+/* 配置文件结构体 */
 typedef struct {
     ngx_file_t            file;
     ngx_buf_t            *buffer;
@@ -162,7 +163,7 @@ typedef struct {
 typedef char *(*ngx_conf_handler_pt)(ngx_conf_t *cf,
     ngx_command_t *dummy, void *conf);
 
-
+/* 配置信息结构体 */
 struct ngx_conf_s {
     char                 *name;
     ngx_array_t          *args;
@@ -174,8 +175,8 @@ struct ngx_conf_s {
     ngx_log_t            *log;
 
     void                 *ctx;
-    ngx_uint_t            module_type;
-    ngx_uint_t            cmd_type;
+    ngx_uint_t            module_type;//模块类型
+    ngx_uint_t            cmd_type;//
 
     ngx_conf_handler_pt   handler;
     char                 *handler_conf;

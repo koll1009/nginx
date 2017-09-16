@@ -26,7 +26,7 @@ ngx_cpuid(uint32_t i, uint32_t *buf)
      * and we could not save %ebx on stack, because %esp is used,
      * when the -fomit-frame-pointer optimization is specified.
      */
-
+	//cpuid指令，获取
     __asm__ (
 
     "    mov    %%ebx, %%esi;  "
@@ -83,15 +83,15 @@ ngx_cpuinfo(void)
 
     ngx_cpuid(0, vbuf);
 
-    vendor = (u_char *) &vbuf[1];
+    vendor = (u_char *) &vbuf[1];//供应商id
 
     if (vbuf[0] == 0) {
         return;
     }
 
-    ngx_cpuid(1, cpu);
+    ngx_cpuid(1, cpu);//返回Model、Family、Stepping信息
 
-    if (ngx_strcmp(vendor, "GenuineIntel") == 0) {
+    if (ngx_strcmp(vendor, "GenuineIntel") == 0) {//intel处理器
 
         switch ((cpu[0] & 0xf00) >> 8) {
 

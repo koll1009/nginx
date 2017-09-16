@@ -203,7 +203,7 @@ ngx_palloc_block(ngx_pool_t *pool, size_t size)
     current = pool->current;
 
     for (p = current; p->d.next; p = p->d.next) {
-        if (p->d.failed++ > 4) {//分配失败超过5次，则把current
+        if (p->d.failed++ > 4) {//分配失败超过5次，则把current，最后一个结点不会增加失败计数
             current = p->d.next;
         }
     }
@@ -216,6 +216,7 @@ ngx_palloc_block(ngx_pool_t *pool, size_t size)
 }
 
 
+/* 分配大内存 */
 static void *
 ngx_palloc_large(ngx_pool_t *pool, size_t size)
 {

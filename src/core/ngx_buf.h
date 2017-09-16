@@ -17,16 +17,17 @@ typedef void *            ngx_buf_tag_t;
 
 typedef struct ngx_buf_s  ngx_buf_t;
 
+/* 缓冲区结构体 */
 struct ngx_buf_s {
-    u_char          *pos;
+    u_char          *pos;//当前
     u_char          *last;
-    off_t            file_pos;
-    off_t            file_last;
+    off_t            file_pos;//文件的offset
+    off_t            file_last;//文件大小
 
     u_char          *start;         /* start of buffer */
     u_char          *end;           /* end of buffer */
     ngx_buf_tag_t    tag;
-    ngx_file_t      *file;
+    ngx_file_t      *file;//缓冲区内容读自该文件
     ngx_buf_t       *shadow;
 
 

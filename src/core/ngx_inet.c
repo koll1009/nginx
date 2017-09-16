@@ -177,6 +177,7 @@ ngx_inet6_addr(u_char *p, size_t len, u_char *addr)
 #endif
 
 
+/* ×Ö·û´®ÐÎÊ½µÄip:port */
 size_t
 ngx_sock_ntop(struct sockaddr *sa, u_char *text, size_t len, ngx_uint_t port)
 {

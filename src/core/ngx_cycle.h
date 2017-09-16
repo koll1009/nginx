@@ -35,7 +35,7 @@ struct ngx_shm_zone_s {
 
 
 struct ngx_cycle_s {
-    void                  ****conf_ctx;
+    void                  ****conf_ctx;/* 所有模块的配置上下文 */
     ngx_pool_t               *pool;
 
     ngx_log_t                *log;
@@ -70,13 +70,14 @@ struct ngx_cycle_s {
 };
 
 
+/* core_conf结构体 */
 typedef struct {
-     ngx_flag_t               daemon;
-     ngx_flag_t               master;
+     ngx_flag_t               daemon;//守护进程标志
+     ngx_flag_t               master;//主进程标志
 
      ngx_msec_t               timer_resolution;
 
-     ngx_int_t                worker_processes;
+     ngx_int_t                worker_processes;//工作进程数
      ngx_int_t                debug_points;
 
      ngx_int_t                rlimit_nofile;
