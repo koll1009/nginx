@@ -12,11 +12,11 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-//
+/* 哈希表中实际存储的key-value对 */
 typedef struct {
-    void             *value;
-    u_short           len;
-    u_char            name[1];
+    void             *value;//value
+    u_short           len;//
+    u_char            name[1];//key，字符串类型
 } ngx_hash_elt_t;
 
 /* 哈希表 */
@@ -32,7 +32,7 @@ typedef struct {
     void             *value;
 } ngx_hash_wildcard_t;
 
-//哈希结点
+//哈希结点，用于查找和初始化
 typedef struct {
     ngx_str_t         key;
     ngx_uint_t        key_hash;

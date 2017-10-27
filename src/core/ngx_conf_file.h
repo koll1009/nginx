@@ -41,13 +41,13 @@
 
 #define NGX_CONF_ARGS_NUMBER 0x000000ff
 #define NGX_CONF_BLOCK       0x00000100
-#define NGX_CONF_FLAG        0x00000200
+#define NGX_CONF_FLAG        0x00000200 //标识配置信息key后面只有1个value值
 #define NGX_CONF_ANY         0x00000400
-#define NGX_CONF_1MORE       0x00000800
+#define NGX_CONF_1MORE       0x00000800 //标识配置信息key后面有多于1个value值
 #define NGX_CONF_2MORE       0x00001000
 #define NGX_CONF_MULTI       0x00002000
 
-#define NGX_DIRECT_CONF      0x00010000
+#define NGX_DIRECT_CONF      0x00010000 //标识直接配置
 
 #define NGX_MAIN_CONF        0x01000000
 #define NGX_ANY_CONF         0x0F000000
@@ -75,10 +75,11 @@
 #define NGX_MAX_CONF_ERRSTR  1024
 
 
+
 struct ngx_command_s {
-    ngx_str_t             name;
-    ngx_uint_t            type;
-    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+    ngx_str_t             name;//配置项名称
+    ngx_uint_t            type;//配置项类型
+    char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);//设值配置信息的函数
     ngx_uint_t            conf;
     ngx_uint_t            offset;
     void                 *post;
@@ -120,9 +121,9 @@ struct ngx_module_s {
 
     ngx_uint_t            version;//
 
-    void                 *ctx; //指向不同模块类型的上下文，例如core module指向ngx_core_module_t
-    ngx_command_t        *commands;
-    ngx_uint_t            type;//类型，
+    void                 *ctx; //指向具体模块类型的上下文，例如NGX_CORE_MODULE指向ngx_core_module_t
+    ngx_command_t        *commands;//处理nginx.conf配置文件的命令
+    ngx_uint_t            type;//模块类型
 
     ngx_int_t           (*init_master)(ngx_log_t *log);
 
@@ -145,9 +146,9 @@ struct ngx_module_s {
     uintptr_t             spare_hook7;
 };
 
-/* core module类型上下文 */
+/* NGX_CORE_MODULE类型的上下文结构体 */
 typedef struct {
-    ngx_str_t             name;
+    ngx_str_t             name;//模块名
     void               *(*create_conf)(ngx_cycle_t *cycle);
     char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);
 } ngx_core_module_t;
@@ -163,7 +164,7 @@ typedef struct {
 typedef char *(*ngx_conf_handler_pt)(ngx_conf_t *cf,
     ngx_command_t *dummy, void *conf);
 
-/* 结构体 */
+/* 解析配置信息使用的结构体 */
 struct ngx_conf_s {
     char                 *name;
     ngx_array_t          *args;//保存解析出的key value值
@@ -171,7 +172,7 @@ struct ngx_conf_s {
     ngx_cycle_t          *cycle;
     ngx_pool_t           *pool;
     ngx_pool_t           *temp_pool;
-    ngx_conf_file_t      *conf_file;//配置文件结构体
+    ngx_conf_file_t      *conf_file;//配置文件
     ngx_log_t            *log;
 
     void                 *ctx;

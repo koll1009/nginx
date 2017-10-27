@@ -9,6 +9,7 @@
 #include <ngx_core.h>
 
 
+/* 哈希查找，@key:哈希值 */
 void *
 ngx_hash_find(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
 {
@@ -244,7 +245,7 @@ ngx_hash_find_combined(ngx_hash_combined_t *hash, ngx_uint_t key, u_char *name,
     return NULL;
 }
 
-
+//sizeof(void*)表示value的地址，key.len用来存储key字符串，len为长度，正好为ngx_hash_elt_t的size
 #define NGX_HASH_ELT_SIZE(name)                                               \
     (sizeof(void *) + ngx_align((name)->key.len + 2, sizeof(void *)))
 
@@ -258,7 +259,7 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
     ngx_hash_elt_t  *elt, **buckets;
 
     for (n = 0; n < nelts; n++) {
-        if (hinit->bucket_size < NGX_HASH_ELT_SIZE(&names[n]) + sizeof(void *))
+        if (hinit->bucket_size < NGX_HASH_ELT_SIZE(&names[n]) + sizeof(void *))//此时一个key-value对所需内存已溢出
         {
             ngx_log_error(NGX_LOG_EMERG, hinit->pool->log, 0,
                           "could not build the %s, you should "
@@ -268,13 +269,16 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
         }
     }
 
-    test = ngx_alloc(hinit->max_size * sizeof(u_short), hinit->pool->log);
+    test = ngx_alloc(hinit->max_size * sizeof(u_short), hinit->pool->log);//用以记录每个bucket所需要的内存大小
     if (test == NULL) {
         return NGX_ERROR;
     }
 
     bucket_size = hinit->bucket_size - sizeof(void *);
 
+	/* bucket_size/2*sizeof(void*)代表每个bucket极限大小下能容纳的结点数，除nelts得最少需要的bucket
+	 * 数目
+	 */
     start = nelts / (bucket_size / (2 * sizeof(void *)));
     start = start ? start : 1;
 
@@ -325,7 +329,7 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
 found:
 
     for (i = 0; i < size; i++) {
-        test[i] = sizeof(void *);
+        test[i] = sizeof(void *);//sizeof(void*)大小的内存用于在末尾放一个value=null的ngx_hash_elt_t,标识结尾
     }
 
     for (n = 0; n < nelts; n++) {
@@ -334,17 +338,17 @@ found:
         }
 
         key = names[n].key_hash % size;
-        test[key] = (u_short) (test[key] + NGX_HASH_ELT_SIZE(&names[n]));
+        test[key] = (u_short) (test[key] + NGX_HASH_ELT_SIZE(&names[n]));//计算每个bucket需要的内存
     }
 
-    len = 0;
+    len = 0;//所有bucket需要的总内存大小
 
     for (i = 0; i < size; i++) {
-        if (test[i] == sizeof(void *)) {
+        if (test[i] == sizeof(void *)) {//表示该bucket未有映射的结点
             continue;
         }
 
-        test[i] = (u_short) (ngx_align(test[i], ngx_cacheline_size));
+        test[i] = (u_short) (ngx_align(test[i], ngx_cacheline_size));//缓存对齐
 
         len += test[i];
     }
@@ -368,20 +372,20 @@ found:
         }
     }
 
-    elts = ngx_palloc(hinit->pool, len + ngx_cacheline_size);
+    elts = ngx_palloc(hinit->pool, len + ngx_cacheline_size);//分配buckets的内存，
     if (elts == NULL) {
         ngx_free(test);
         return NGX_ERROR;
     }
 
-    elts = ngx_align_ptr(elts, ngx_cacheline_size);
+    elts = ngx_align_ptr(elts, ngx_cacheline_size);//分配时多增的ngx_cacheline_size即为了该处对齐
 
     for (i = 0; i < size; i++) {
         if (test[i] == sizeof(void *)) {
             continue;
         }
 
-        buckets[i] = (ngx_hash_elt_t *) elts;
+        buckets[i] = (ngx_hash_elt_t *) elts;//
         elts += test[i];
 
     }

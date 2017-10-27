@@ -280,7 +280,7 @@ done:
 }
 
 
-/* 统一的配置信息处理函数 */
+/* 统一的模块配置信息处理函数 */
 static ngx_int_t
 ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 {
@@ -290,7 +290,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
     ngx_str_t      *name;
     ngx_command_t  *cmd;
 
-    name = cf->args->elts;//key
+    name = cf->args->elts;//配置信息key value1 valueN...中的key
 
     multi = 0;
 
@@ -307,15 +307,14 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
         cmd = ngx_modules[i]->commands;
         if (cmd == NULL) {
             continue;
-        }
-
+        
         for ( /* void */ ; cmd->name.len; cmd++) {
 
             if (name->len != cmd->name.len) {
                 continue;
             }
 
-            if (ngx_strcmp(name->data, cmd->name.data) != 0) {//找到模块中cmd==key的那个command
+            if (ngx_strcmp(name->data, cmd->name.data) != 0) {//查找配套的配置命令ngx_command_t
                 continue;
             }
 
