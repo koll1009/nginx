@@ -26,6 +26,7 @@ typedef struct ngx_shm_zone_s  ngx_shm_zone_t;
 
 typedef ngx_int_t (*ngx_shm_zone_init_pt) (ngx_shm_zone_t *zone, void *data);
 
+/* 共享内存区结构体 */
 struct ngx_shm_zone_s {
     void                     *data;
     ngx_shm_t                 shm;
@@ -35,7 +36,7 @@ struct ngx_shm_zone_s {
 
 
 struct ngx_cycle_s {
-    void                  ****conf_ctx;/* 所有模块的配置上下文 */
+    void                  ****conf_ctx;/* 所有模块的配置上下文数组 */
     ngx_pool_t               *pool;
 
     ngx_log_t                *log;

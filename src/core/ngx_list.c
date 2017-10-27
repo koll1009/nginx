@@ -8,7 +8,10 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/* 创建ngx_list_t
+ * @n:链表每个ngx_list_part_t中数组的大小
+ * @size:每个元素大小
+ */
 ngx_list_t *
 ngx_list_create(ngx_pool_t *pool, ngx_uint_t n, size_t size)
 {
@@ -35,6 +38,7 @@ ngx_list_create(ngx_pool_t *pool, ngx_uint_t n, size_t size)
 }
 
 
+/* 压入一个新的元素，通过返回地址设值实现 */
 void *
 ngx_list_push(ngx_list_t *l)
 {
@@ -43,7 +47,7 @@ ngx_list_push(ngx_list_t *l)
 
     last = l->last;
 
-    if (last->nelts == l->nalloc) {
+    if (last->nelts == l->nalloc) {//无空间
 
         /* the last part is full, allocate a new list part */
 

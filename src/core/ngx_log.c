@@ -101,13 +101,13 @@ ngx_log_error_core(ngx_uint_t level, ngx_log_t *log, ngx_err_t err,
     ngx_memcpy(errstr, ngx_cached_err_log_time.data,
                ngx_cached_err_log_time.len);
 
-    p = errstr + ngx_cached_err_log_time.len;
+    p = errstr + ngx_cached_err_log_time.len;//打印时间
 
-    p = ngx_slprintf(p, last, " [%V] ", &err_levels[level]);//error级别
+    p = ngx_slprintf(p, last, " [%V] ", &err_levels[level]);//打印error级别
 
     /* pid#tid */
     p = ngx_slprintf(p, last, "%P#" NGX_TID_T_FMT ": ",
-                    ngx_log_pid, ngx_log_tid);
+                    ngx_log_pid, ngx_log_tid);//打印进程id和线程id
 
     if (log->connection) {
         p = ngx_slprintf(p, last, "*%uA ", log->connection);
@@ -283,7 +283,7 @@ ngx_log_t * ngx_log_init(u_char *prefix)
 
     nlen = ngx_strlen(name);
 
-    if (nlen == 0) {
+    if (nlen == 0) {//如果没有定义错误日志名，则使用标准错误作为
         ngx_log_file.fd = ngx_stderr;
         return &ngx_log;
     }
@@ -301,7 +301,7 @@ ngx_log_t * ngx_log_init(u_char *prefix)
 
         } else {
 #ifdef NGX_PREFIX
-            prefix = (u_char *) NGX_PREFIX;
+            prefix = (u_char *) NGX_PREFIX;//默认前置路径
             plen = ngx_strlen(prefix);
 #else
             plen = 0;

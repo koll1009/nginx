@@ -71,7 +71,7 @@ ngx_conf_param(ngx_conf_t *cf)
 
     param = &cf->cycle->conf_param;
 
-    if (param->len == 0) {//无
+    if (param->len == 0) {//无配置字符串，返回
         return NGX_CONF_OK;
     }
 
@@ -99,7 +99,7 @@ ngx_conf_param(ngx_conf_t *cf)
     return rv;
 }
 
-/* 配置内容解析 */
+/* 配置信息解析函数 */
 char *
 ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
 {
@@ -108,6 +108,8 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
     ngx_int_t         rc;
     ngx_buf_t         buf;
     ngx_conf_file_t  *prev, conf_file;
+
+	/* 3种解析类型 */
     enum {
         parse_file = 0,
         parse_block,
@@ -119,7 +121,7 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
     prev = NULL;
 #endif
 
-    if (filename) {//
+    if (filename) {
 
         /* open configuration file */
 
@@ -131,18 +133,18 @@ ngx_conf_parse(ngx_conf_t *cf, ngx_str_t *filename)
             return NGX_CONF_ERROR;
         }
 
-        prev = cf->conf_file;
+        prev = cf->conf_file;//保存之前的配置文件
 
         cf->conf_file = &conf_file;
 
-        if (ngx_fd_info(fd, &cf->conf_file->file.info) == -1) {
+        if (ngx_fd_info(fd, &cf->conf_file->file.info) == -1) {//获取文件信息
             ngx_log_error(NGX_LOG_EMERG, cf->log, ngx_errno,
                           ngx_fd_info_n " \"%s\" failed", filename->data);
         }
 
         cf->conf_file->buffer = &buf;
 
-        buf.start = ngx_alloc(NGX_CONF_BUFFER, cf->log);
+        buf.start = ngx_alloc(NGX_CONF_BUFFER, cf->log);//分配缓冲区
         if (buf.start == NULL) {
             goto failed;
         }
@@ -278,6 +280,7 @@ done:
 }
 
 
+/* 统一的配置信息处理函数 */
 static ngx_int_t
 ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 {
@@ -287,7 +290,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
     ngx_str_t      *name;
     ngx_command_t  *cmd;
 
-    name = cf->args->elts;
+    name = cf->args->elts;//key
 
     multi = 0;
 
@@ -312,7 +315,7 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 continue;
             }
 
-            if (ngx_strcmp(name->data, cmd->name.data) != 0) {
+            if (ngx_strcmp(name->data, cmd->name.data) != 0) {//找到模块中cmd==key的那个command
                 continue;
             }
 
@@ -378,13 +381,13 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
 
             conf = NULL;
 
-            if (cmd->type & NGX_DIRECT_CONF) {
+            if (cmd->type & NGX_DIRECT_CONF) {//直接赋值类型，取模块对应的配置上下文
                 conf = ((void **) cf->ctx)[ngx_modules[i]->index];
 
-            } else if (cmd->type & NGX_MAIN_CONF) {
+            } else if (cmd->type & NGX_MAIN_CONF) {//event http等类型的主配置上下文，取地址，用于内存分配和初始化
                 conf = &(((void **) cf->ctx)[ngx_modules[i]->index]);
 
-            } else if (cf->ctx) {
+            } else if (cf->ctx) {//event http等类型的从配置上下文赋值
                 confp = *(void **) ((char *) cf->ctx + cmd->conf);
 
                 if (confp) {
@@ -432,6 +435,7 @@ invalid:
 }
 
 
+/* 从配置信息read a token */
 static ngx_int_t
 ngx_conf_read_token(ngx_conf_t *cf)
 {
@@ -446,9 +450,9 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
     found = 0;
     need_space = 0;
-    last_space = 1;
-    sharp_comment = 0;
-    variable = 0;
+    last_space = 1;   //解析标志
+    sharp_comment = 0;//注释标志
+    variable = 0;     //变量标志
     quoted = 0;
     s_quoted = 0;
     d_quoted = 0;
@@ -458,7 +462,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
     start = b->pos;
     start_line = cf->conf_file->line;
 
-    file_size = ngx_file_size(&cf->conf_file->file.info);
+    file_size = ngx_file_size(&cf->conf_file->file.info);//文件大小
 
     for ( ;; ) {
 
@@ -481,12 +485,12 @@ ngx_conf_read_token(ngx_conf_t *cf)
                     return NGX_ERROR;
                 }
 
-                return NGX_CONF_FILE_DONE;
+                return NGX_CONF_FILE_DONE;//已解析完
             }
 
             len = b->pos - start;
 
-            if (len == NGX_CONF_BUFFER) {
+            if (len == NGX_CONF_BUFFER) {//
                 cf->conf_file->line = start_line;
 
                 if (d_quoted) {
@@ -509,10 +513,10 @@ ngx_conf_read_token(ngx_conf_t *cf)
             }
 
             if (len) {
-                ngx_memmove(b->start, start, len);
+                ngx_memmove(b->start, start, len);//此为两次读取间不完整的token
             }
 
-            size = (ssize_t) (file_size - cf->conf_file->file.offset);
+            size = (ssize_t) (file_size - cf->conf_file->file.offset);//未读的大小
 
             if (size > b->end - (b->start + len)) {
                 size = b->end - (b->start + len);
@@ -538,17 +542,17 @@ ngx_conf_read_token(ngx_conf_t *cf)
             start = b->start;
         }
 
-        ch = *b->pos++;
+        ch = *b->pos++;//读取一个字符
 
-        if (ch == LF) {
+        if (ch == LF) {//换行符
             cf->conf_file->line++;
 
-            if (sharp_comment) {
+            if (sharp_comment) {//单行注释，遇换行符则表示注释结束
                 sharp_comment = 0;
             }
         }
 
-        if (sharp_comment) {
+        if (sharp_comment) {//跳过注释
             continue;
         }
 
@@ -564,7 +568,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 continue;
             }
 
-            if (ch == ';') {
+            if (ch == ';') {//一个key:vaule配置对的结束符
                 return NGX_OK;
             }
 
@@ -583,19 +587,19 @@ ngx_conf_read_token(ngx_conf_t *cf)
             }
         }
 
-        if (last_space) {
-            if (ch == ' ' || ch == '\t' || ch == CR || ch == LF) {
+        if (last_space) {//解析开始
+            if (ch == ' ' || ch == '\t' || ch == CR || ch == LF) {//跳过空字符
                 continue;
             }
 
-            start = b->pos - 1;
-            start_line = cf->conf_file->line;
+            start = b->pos - 1;//从此处开始解析
+            start_line = cf->conf_file->line;//新token所在行
 
             switch (ch) {
 
             case ';':
             case '{':
-                if (cf->args->nelts == 0) {
+                if (cf->args->nelts == 0) {//不能以';' or '{'
                     ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                        "unexpected \"%c\"", ch);
                     return NGX_ERROR;
@@ -608,7 +612,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 return NGX_OK;
 
             case '}':
-                if (cf->args->nelts != 0) {
+                if (cf->args->nelts != 0) {//{}内的信息解析完后，args应为空
                     ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                        "unexpected \"}\"");
                     return NGX_ERROR;
@@ -616,29 +620,29 @@ ngx_conf_read_token(ngx_conf_t *cf)
 
                 return NGX_CONF_BLOCK_DONE;
 
-            case '#':
+            case '#'://注释字符
                 sharp_comment = 1;
                 continue;
 
-            case '\\':
+            case '\\'://
                 quoted = 1;
                 last_space = 0;
                 continue;
 
-            case '"':
-                start++;
+            case '"'://包含敏感字符的字符串需要用引号包裹，例如
+                start++;//跳过引号
                 d_quoted = 1;
                 last_space = 0;
                 continue;
 
-            case '\'':
+            case '\''://同上
                 start++;
                 s_quoted = 1;
                 last_space = 0;
                 continue;
 
             default:
-                last_space = 0;
+                last_space = 0;//last_space为0，表示找到了要解析的配置对的首字符
             }
 
         } else {
@@ -653,7 +657,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 continue;
             }
 
-            if (ch == '$') {
+            if (ch == '$') {//变量字符
                 variable = 1;
                 continue;
             }
@@ -673,7 +677,7 @@ ngx_conf_read_token(ngx_conf_t *cf)
                 }
 
             } else if (ch == ' ' || ch == '\t' || ch == CR || ch == LF
-                       || ch == ';' || ch == '{')
+                       || ch == ';' || ch == '{')//此时表示key后面直接加';'或这'{'
             {
                 last_space = 1;
                 found = 1;
@@ -1040,6 +1044,7 @@ ngx_conf_log_error(ngx_uint_t level, ngx_conf_t *cf, ngx_err_t err,
 }
 
 
+/* 配置项里的flag类设置值 */
 char *
 ngx_conf_set_flag_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {

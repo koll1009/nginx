@@ -29,7 +29,7 @@ static ngx_conf_enum_t  ngx_debug_points[] = {
     { ngx_null_string, 0 }
 };
 
-
+/* "core" module命令 */
 static ngx_command_t  ngx_core_commands[] = {
 
     { ngx_string("daemon"),
@@ -305,7 +305,7 @@ main(int argc, char *const *argv)
         return 1;
     }
 
-    if (ngx_process_options(&init_cycle) != NGX_OK) {
+    if (ngx_process_options(&init_cycle) != NGX_OK) {//处理配置文件、前置路径等选项
         return 1;
     }
 
@@ -331,7 +331,7 @@ main(int argc, char *const *argv)
         ngx_modules[i]->index = ngx_max_module++;
     }
 
-    cycle = ngx_init_cycle(&init_cycle);
+    cycle = ngx_init_cycle(&init_cycle);//每个nginx进程对应一个ngx_cycle结构体，需要初始化
     if (cycle == NULL) {
         if (ngx_test_config) {
             ngx_log_stderr(0, "configuration file %s test failed",
@@ -734,7 +734,7 @@ ngx_get_options(int argc, char *const *argv)
                 ngx_log_stderr(0, "option \"-c\" requires file name");
                 return NGX_ERROR;
 
-            case 'g'://输入参数
+            case 'g'://输入的配置参数
                 if (*p) {
                     ngx_conf_params = p;
                     goto next;
@@ -824,12 +824,13 @@ ngx_save_argv(ngx_cycle_t *cycle, int argc, char *const *argv)
 
 #endif
 
-    ngx_os_environ = environ;//环境
+    ngx_os_environ = environ;//环境变量
 
     return NGX_OK;
 }
 
 
+/* 处理输入参数，保存到ngx_cycle中对应的字段 */
 static ngx_int_t
 ngx_process_options(ngx_cycle_t *cycle)
 {
@@ -840,7 +841,7 @@ ngx_process_options(ngx_cycle_t *cycle)
         len = ngx_strlen(ngx_prefix);
         p = ngx_prefix;
 
-        if (!ngx_path_separator(*p)) {
+        if (!ngx_path_separator(*p)) {//相对路径
             p = ngx_pnalloc(cycle->pool, len + 1);
             if (p == NULL) {
                 return NGX_ERROR;
@@ -926,7 +927,7 @@ ngx_process_options(ngx_cycle_t *cycle)
 }
 
 
-/* ngx_core_module模块上下文的create_conf方法 */
+/* 'core'模块创建配置上下文的方法 */
 static void *
 ngx_core_module_create_conf(ngx_cycle_t *cycle)
 {
@@ -946,6 +947,7 @@ ngx_core_module_create_conf(ngx_cycle_t *cycle)
      *     ccf->cpu_affinity_n = 0;
      *     ccf->cpu_affinity = NULL;
      */
+
 	//初始化
     ccf->daemon = NGX_CONF_UNSET;
     ccf->master = NGX_CONF_UNSET;

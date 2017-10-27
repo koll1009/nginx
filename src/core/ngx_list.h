@@ -23,16 +23,17 @@ struct ngx_list_part_s {
 
 
 typedef struct {
-    ngx_list_part_t  *last;
-    ngx_list_part_t   part;
-    size_t            size;
-    ngx_uint_t        nalloc;
+    ngx_list_part_t  *last;//指向最后一个part
+    ngx_list_part_t   part;//第一个part
+    size_t            size;//每个part的数组元素的大小
+    ngx_uint_t        nalloc;//每个part的数组元素数量
     ngx_pool_t       *pool;
 } ngx_list_t;
 
 
 ngx_list_t *ngx_list_create(ngx_pool_t *pool, ngx_uint_t n, size_t size);
 
+/* 初始化 */
 static ngx_inline ngx_int_t
 ngx_list_init(ngx_list_t *list, ngx_pool_t *pool, ngx_uint_t n, size_t size)
 {

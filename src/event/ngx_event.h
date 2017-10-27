@@ -471,6 +471,7 @@ extern ngx_os_io_t  ngx_io;
 #define NGX_EVENT_CONF        0x02000000
 
 
+/* event 核心模块配置上下文 */
 typedef struct {
     ngx_uint_t    connections;
     ngx_uint_t    use;

@@ -110,8 +110,8 @@ struct ngx_open_file_s {
 
 /* module结构体 */
 struct ngx_module_s {
-    ngx_uint_t            ctx_index;//上下文索引
-    ngx_uint_t            index;//同一类型的索引
+    ngx_uint_t            ctx_index;//同一类型中的索引
+    ngx_uint_t            index;//索引
 
     ngx_uint_t            spare0;
     ngx_uint_t            spare1;
@@ -120,7 +120,7 @@ struct ngx_module_s {
 
     ngx_uint_t            version;//
 
-    void                 *ctx; //指向不同模块类型的上下文
+    void                 *ctx; //指向不同模块类型的上下文，例如core module指向ngx_core_module_t
     ngx_command_t        *commands;
     ngx_uint_t            type;//类型，
 
@@ -163,22 +163,22 @@ typedef struct {
 typedef char *(*ngx_conf_handler_pt)(ngx_conf_t *cf,
     ngx_command_t *dummy, void *conf);
 
-/* 配置信息结构体 */
+/* 结构体 */
 struct ngx_conf_s {
     char                 *name;
-    ngx_array_t          *args;
+    ngx_array_t          *args;//保存解析出的key value值
 
     ngx_cycle_t          *cycle;
     ngx_pool_t           *pool;
     ngx_pool_t           *temp_pool;
-    ngx_conf_file_t      *conf_file;
+    ngx_conf_file_t      *conf_file;//配置文件结构体
     ngx_log_t            *log;
 
     void                 *ctx;
     ngx_uint_t            module_type;//模块类型
     ngx_uint_t            cmd_type;//
 
-    ngx_conf_handler_pt   handler;
+    ngx_conf_handler_pt   handler;//配置对处理函数
     char                 *handler_conf;
 };
 

@@ -875,6 +875,7 @@ ngx_send_lowat(ngx_connection_t *c, size_t lowat)
 }
 
 
+/* event {}配置项解析 */
 static char *
 ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -892,7 +893,7 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             continue;
         }
 
-        ngx_modules[i]->ctx_index = ngx_event_max_module++;
+        ngx_modules[i]->ctx_index = ngx_event_max_module++;//给event module设置类型索引值
     }
 
     ctx = ngx_pcalloc(cf->pool, sizeof(void *));
@@ -907,7 +908,7 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     *(void **) conf = ctx;
 
-    for (i = 0; ngx_modules[i]; i++) {
+    for (i = 0; ngx_modules[i]; i++) {//初始化所有event module
         if (ngx_modules[i]->type != NGX_EVENT_MODULE) {
             continue;
         }
@@ -1114,6 +1115,7 @@ ngx_event_debug_connection(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/* event core module配置上下文创建 */
 static void *
 ngx_event_create_conf(ngx_cycle_t *cycle)
 {

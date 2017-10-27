@@ -12,26 +12,27 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+//
 typedef struct {
     void             *value;
     u_short           len;
     u_char            name[1];
 } ngx_hash_elt_t;
 
-
+/* 哈希表 */
 typedef struct {
     ngx_hash_elt_t  **buckets;
     ngx_uint_t        size;
 } ngx_hash_t;
 
 
+/* 通配符哈希表 */
 typedef struct {
     ngx_hash_t        hash;
     void             *value;
 } ngx_hash_wildcard_t;
 
-
+//哈希结点
 typedef struct {
     ngx_str_t         key;
     ngx_uint_t        key_hash;
@@ -53,8 +54,8 @@ typedef struct {
     ngx_hash_t       *hash;
     ngx_hash_key_pt   key;
 
-    ngx_uint_t        max_size;
-    ngx_uint_t        bucket_size;
+    ngx_uint_t        max_size;//bucket数目上限
+    ngx_uint_t        bucket_size;//单个bucket的大小上限
 
     char             *name;
     ngx_pool_t       *pool;

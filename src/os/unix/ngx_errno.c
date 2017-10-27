@@ -43,7 +43,7 @@ ngx_strerror(ngx_err_t err, u_char *errstr, size_t size)
 }
 
 
-/* 初始化标准错误 */
+/* 初始化标准错误,即把系统定义的0-124标准错误码对应的errmsg存储到一个数组中 */
 ngx_uint_t
 ngx_strerror_init(void)
 {

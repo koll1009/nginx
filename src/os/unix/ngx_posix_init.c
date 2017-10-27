@@ -81,7 +81,7 @@ ngx_os_init(ngx_log_t *log)
     ngx_inherited_nonblocking = 0;
 #endif
 
-    srandom(ngx_time());
+    srandom(ngx_time());//设置随机种子
 
     return NGX_OK;
 }

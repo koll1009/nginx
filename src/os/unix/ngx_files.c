@@ -16,6 +16,7 @@ ngx_uint_t  ngx_file_aio = 1;
 #endif
 
 
+/* nginx¶ÁÎÄ¼þ */
 ssize_t
 ngx_read_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
 {

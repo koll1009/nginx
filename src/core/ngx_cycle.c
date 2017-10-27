@@ -39,7 +39,7 @@ static ngx_connection_t  dumb;
 static ngx_str_t  error_log = ngx_string(NGX_ERROR_LOG_PATH);
 
 
-/* 初始化 */
+/* 初始化进程的ngx_cycle_t */
 ngx_cycle_t *
 ngx_init_cycle(ngx_cycle_t *old_cycle)
 {
@@ -191,7 +191,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 	//初始化连接队列
     ngx_queue_init(&cycle->reusable_connections_queue);
 
-	//分配模块context
+	//分配所有模块的配置上下文
     cycle->conf_ctx = ngx_pcalloc(pool, ngx_max_module * sizeof(void *));
     if (cycle->conf_ctx == NULL) {
         ngx_destroy_pool(pool);
@@ -266,13 +266,13 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     log->log_level = NGX_LOG_DEBUG_ALL;
 #endif
 
-    if (ngx_conf_param(&conf) != NGX_CONF_OK) {//解析配置
+    if (ngx_conf_param(&conf) != NGX_CONF_OK) {//解析输入的配置字符串
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
         return NULL;
     }
 
-    if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {
+    if (ngx_conf_parse(&conf, &cycle->conf_file) != NGX_CONF_OK) {//解析配置文件
         environ = senv;
         ngx_destroy_cycle_pools(&conf);
         return NULL;
@@ -290,7 +290,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
 
         module = ngx_modules[i]->ctx;
 
-        if (module->init_conf) {
+        if (module->init_conf) {//初始化core moudle的配置上下文
             if (module->init_conf(cycle, cycle->conf_ctx[ngx_modules[i]->index])
                 == NGX_CONF_ERROR)
             {
