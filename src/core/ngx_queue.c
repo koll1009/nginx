@@ -9,11 +9,10 @@
 #include <ngx_core.h>
 
 
-/*
+/* 查找链表的中心结点
  * find the middle queue element if the queue has odd number of elements
  * or the first element of the queue's second part otherwise
  */
-
 ngx_queue_t *
 ngx_queue_middle(ngx_queue_t *queue)
 {
@@ -21,7 +20,7 @@ ngx_queue_middle(ngx_queue_t *queue)
 
     middle = ngx_queue_head(queue);
 
-    if (middle == ngx_queue_last(queue)) {
+    if (middle == ngx_queue_last(queue)) {//链表为空
         return middle;
     }
 
@@ -45,7 +44,7 @@ ngx_queue_middle(ngx_queue_t *queue)
 }
 
 
-/* the stable insertion sort */
+/* 插入排序the stable insertion sort */
 
 void
 ngx_queue_sort(ngx_queue_t *queue,
