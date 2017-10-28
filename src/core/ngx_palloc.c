@@ -126,7 +126,7 @@ ngx_palloc(ngx_pool_t *pool, size_t size)
         p = pool->current;
 
         do {
-            m = ngx_align_ptr(p->d.last, NGX_ALIGNMENT);//先把内存对其
+            m = ngx_align_ptr(p->d.last, NGX_ALIGNMENT);//先把内存对齐
 
             if ((size_t) (p->d.end - m) >= size) {//遍历内存池的每个内存节点，直到找出充足的内存
                 p->d.last = m + size;

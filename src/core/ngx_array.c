@@ -8,7 +8,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/* 新建一个动态数组 */
 ngx_array_t *
 ngx_array_create(ngx_pool_t *p, ngx_uint_t n, size_t size)
 {
@@ -32,7 +32,9 @@ ngx_array_create(ngx_pool_t *p, ngx_uint_t n, size_t size)
     return a;
 }
 
-
+/* 销毁动态数组，因为动态数组使用内存池分配，所以销毁的实际意义为当且仅当
+ * 动态数组结构体或数组本身为内存池最后一次分配时，重置内存池空闲指针使得可重用
+ */
 void
 ngx_array_destroy(ngx_array_t *a)
 {
@@ -50,6 +52,7 @@ ngx_array_destroy(ngx_array_t *a)
 }
 
 
+/* 动态数组新增一个元素 */
 void *
 ngx_array_push(ngx_array_t *a)
 {

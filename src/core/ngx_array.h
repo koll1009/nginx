@@ -12,12 +12,12 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+/* 动态数组结构体 */
 struct ngx_array_s {
-    void        *elts;
-    ngx_uint_t   nelts;
-    size_t       size;
-    ngx_uint_t   nalloc;
+    void        *elts;//数组指针
+    ngx_uint_t   nelts;//已使用的元素个数
+    size_t       size; //元素大小
+    ngx_uint_t   nalloc;//数组大小
     ngx_pool_t  *pool;
 };
 
@@ -28,6 +28,7 @@ void *ngx_array_push(ngx_array_t *a);
 void *ngx_array_push_n(ngx_array_t *a, ngx_uint_t n);
 
 
+/* 初始化动态数组，分配数组内存，设施成员初始值 */
 static ngx_inline ngx_int_t
 ngx_array_init(ngx_array_t *array, ngx_pool_t *pool, ngx_uint_t n, size_t size)
 {
