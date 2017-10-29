@@ -12,6 +12,7 @@
 static void *ngx_radix_alloc(ngx_radix_tree_t *tree);
 
 
+/* 新建一个基数树，@preallocate为预分配的结点数 */
 ngx_radix_tree_t *
 ngx_radix_tree_create(ngx_pool_t *pool, ngx_int_t preallocate)
 {
@@ -28,7 +29,7 @@ ngx_radix_tree_create(ngx_pool_t *pool, ngx_int_t preallocate)
     tree->start = NULL;
     tree->size = 0;
 
-    tree->root = ngx_radix_alloc(tree);
+    tree->root = ngx_radix_alloc(tree);//创建根节点
     if (tree->root == NULL) {
         return NULL;
     }
@@ -59,9 +60,11 @@ ngx_radix_tree_create(ngx_pool_t *pool, ngx_int_t preallocate)
      *     8 bits on sparc64 in 32-bit mode (8K pages)
      */
 
-    if (preallocate == -1) {
+    if (preallocate == -1) {/* 此时按照一个内存页预分配 */
         switch (ngx_pagesize / sizeof(ngx_radix_tree_t)) {
-
+	    /* 对于掩码mask，从高位开始每一位表示2^n个结点，所以掩码表示的结点总数为2^1+2^2...+2^n=2^(n+1)-2,
+		 * 加上根结点，总数为2^(n+1)-1，所以preallocate的取值比case的右移1位
+		 */
         /* amd64 */
         case 128:
             preallocate = 6;
@@ -81,7 +84,7 @@ ngx_radix_tree_create(ngx_pool_t *pool, ngx_int_t preallocate)
     mask = 0;
     inc = 0x80000000;
 
-    while (preallocate--) {
+    while (preallocate--) {//逐层挨个分配结点
 
         key = 0;
         mask >>= 1;
@@ -105,6 +108,7 @@ ngx_radix_tree_create(ngx_pool_t *pool, ngx_int_t preallocate)
 }
 
 
+/* 基数树插入一个结点 */
 ngx_int_t
 ngx_radix32tree_insert(ngx_radix_tree_t *tree, uint32_t key, uint32_t mask,
     uintptr_t value)
@@ -117,6 +121,7 @@ ngx_radix32tree_insert(ngx_radix_tree_t *tree, uint32_t key, uint32_t mask,
     node = tree->root;
     next = tree->root;
 
+    /* 检测该结点是否已经分配内存 */
     while (bit & mask) {
         if (key & bit) {
             next = node->right;
@@ -133,8 +138,8 @@ ngx_radix32tree_insert(ngx_radix_tree_t *tree, uint32_t key, uint32_t mask,
         node = next;
     }
 
-    if (next) {
-        if (node->value != NGX_RADIX_NO_VALUE) {
+    if (next) {/* 该结点已经分配，直接使用 */
+        if (node->value != NGX_RADIX_NO_VALUE) {//此时，该结点已经被占用
             return NGX_BUSY;
         }
 
@@ -142,7 +147,7 @@ ngx_radix32tree_insert(ngx_radix_tree_t *tree, uint32_t key, uint32_t mask,
         return NGX_OK;
     }
 
-    while (bit & mask) {
+    while (bit & mask) {/* 把该key值尚未分配内存的结点新分配内存 */
         next = ngx_radix_alloc(tree);
         if (next == NULL) {
             return NGX_ERROR;
@@ -169,7 +174,7 @@ ngx_radix32tree_insert(ngx_radix_tree_t *tree, uint32_t key, uint32_t mask,
     return NGX_OK;
 }
 
-
+/* 基数树删除一个结点 */
 ngx_int_t
 ngx_radix32tree_delete(ngx_radix_tree_t *tree, uint32_t key, uint32_t mask)
 {
@@ -194,7 +199,7 @@ ngx_radix32tree_delete(ngx_radix_tree_t *tree, uint32_t key, uint32_t mask)
         return NGX_ERROR;
     }
 
-    if (node->right || node->left) {
+    if (node->right || node->left) {//删除一个中间结点
         if (node->value != NGX_RADIX_NO_VALUE) {
             node->value = NGX_RADIX_NO_VALUE;
             return NGX_OK;
@@ -203,7 +208,7 @@ ngx_radix32tree_delete(ngx_radix_tree_t *tree, uint32_t key, uint32_t mask)
         return NGX_ERROR;
     }
 
-    for ( ;; ) {
+    for ( ;; ) {/* 删除结点，如果父结点只有此子结点且无值，一并删除 */
         if (node->parent->right == node) {
             node->parent->right = NULL;
 
@@ -211,11 +216,11 @@ ngx_radix32tree_delete(ngx_radix_tree_t *tree, uint32_t key, uint32_t mask)
             node->parent->left = NULL;
         }
 
-        node->right = tree->free;
+        node->right = tree->free;/* 把删除的结点挂入空闲链 */
         tree->free = node;
 
         node = node->parent;
-
+		/* 父结点无其余子结点，无有意义值，且不为根结点，一并删除 */
         if (node->right || node->left) {
             break;
         }
@@ -233,6 +238,7 @@ ngx_radix32tree_delete(ngx_radix_tree_t *tree, uint32_t key, uint32_t mask)
 }
 
 
+/* 基数树查找操作 */
 uintptr_t
 ngx_radix32tree_find(ngx_radix_tree_t *tree, uint32_t key)
 {
@@ -263,18 +269,19 @@ ngx_radix32tree_find(ngx_radix_tree_t *tree, uint32_t key)
 }
 
 
+/* 分配一个基数树结点 */
 static void *
 ngx_radix_alloc(ngx_radix_tree_t *tree)
 {
     char  *p;
 
-    if (tree->free) {
+    if (tree->free) {//有空闲结点，则取第一个
         p = (char *) tree->free;
         tree->free = tree->free->right;
         return p;
     }
 
-    if (tree->size < sizeof(ngx_radix_node_t)) {
+    if (tree->size < sizeof(ngx_radix_node_t)) {//无空闲内存，则新分配一页内存
         tree->start = ngx_pmemalign(tree->pool, ngx_pagesize, ngx_pagesize);
         if (tree->start == NULL) {
             return NULL;
