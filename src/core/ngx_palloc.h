@@ -55,7 +55,7 @@ typedef struct {
 } ngx_pool_data_t;
 
 
-//内存池结构
+/* 内存池结构体 */
 struct ngx_pool_s {
     ngx_pool_data_t       d;
     size_t                max;//从内存池分配的上限值，如果超出则使用ngx_pool_large_t管理

@@ -24,8 +24,8 @@ ngx_create_pool(size_t size, ngx_log_t *log)
         return NULL;
     }
 
-    p->d.last = (u_char *) p + sizeof(ngx_pool_t);//可
-    p->d.end = (u_char *) p + size;
+    p->d.last = (u_char *) p + sizeof(ngx_pool_t);//可用内存的首地址
+    p->d.end = (u_char *) p + size;//
     p->d.next = NULL;
     p->d.failed = 0;
 
@@ -114,7 +114,7 @@ ngx_reset_pool(ngx_pool_t *pool)
 }
 
 
-/* 分配内存 */
+/* cong内存池分配内存 */
 void *
 ngx_palloc(ngx_pool_t *pool, size_t size)
 {
@@ -126,7 +126,7 @@ ngx_palloc(ngx_pool_t *pool, size_t size)
         p = pool->current;
 
         do {
-            m = ngx_align_ptr(p->d.last, NGX_ALIGNMENT);//先把内存对齐
+            m = ngx_align_ptr(p->d.last, NGX_ALIGNMENT);//先把可用内存首地址对齐
 
             if ((size_t) (p->d.end - m) >= size) {//遍历内存池的每个内存节点，直到找出充足的内存
                 p->d.last = m + size;
@@ -138,7 +138,7 @@ ngx_palloc(ngx_pool_t *pool, size_t size)
 
         } while (p);
 
-        return ngx_palloc_block(pool, size);//分配一个新的内粗节点
+        return ngx_palloc_block(pool, size);//分配一个新的内存池节点
     }
 
     return ngx_palloc_large(pool, size);

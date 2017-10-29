@@ -42,7 +42,7 @@ ngx_array_destroy(ngx_array_t *a)
 
     p = a->pool;
 
-    if ((u_char *) a->elts + a->size * a->nalloc == p->d.last) {
+    if ((u_char *) a->elts + a->size * a->nalloc == p->d.last) {//为何不是把当前可分配的内存池结点挨个检测
         p->d.last -= a->size * a->nalloc;
     }
 
