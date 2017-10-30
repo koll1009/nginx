@@ -49,7 +49,7 @@ ngx_hash_find(ngx_hash_t *hash, ngx_uint_t key, u_char *name, size_t len)
     return NULL;
 }
 
-
+/* 含通配符的哈希查找，通配符在末端 */
 void *
 ngx_hash_find_wc_head(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
 {
@@ -63,7 +63,7 @@ ngx_hash_find_wc_head(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
     n = len;
 
     while (n) {
-        if (name[n - 1] == '.') {
+        if (name[n - 1] == '.') {//倒序搜索第一个.符
             break;
         }
 
@@ -249,6 +249,7 @@ ngx_hash_find_combined(ngx_hash_combined_t *hash, ngx_uint_t key, u_char *name,
 #define NGX_HASH_ELT_SIZE(name)                                               \
     (sizeof(void *) + ngx_align((name)->key.len + 2, sizeof(void *)))
 
+/* 哈希表初始化 */
 ngx_int_t
 ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
 {
@@ -459,6 +460,7 @@ found:
 }
 
 
+/* 支持通配符的哈希表初始化 */
 ngx_int_t
 ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
     ngx_uint_t nelts)
@@ -470,6 +472,7 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
     ngx_hash_init_t       h;
     ngx_hash_wildcard_t  *wdc;
 
+	
     if (ngx_array_init(&curr_names, hinit->temp_pool, nelts,
                        sizeof(ngx_hash_key_t))
         != NGX_OK)
@@ -484,7 +487,7 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
         return NGX_ERROR;
     }
 
-    for (n = 0; n < nelts; n = i) {
+    for (n = 0; n < nelts; n = i) {//每个key-value对，依次执行
 
 #if 0
         ngx_log_error(NGX_LOG_ALERT, hinit->pool->log, 0,
@@ -493,13 +496,17 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
 
         dot = 0;
 
+		/* 使用第一个'.'字符分割字符串，前部分压入到curr_names array,后部分
+		 * 压入到next_names array
+		 */
         for (len = 0; len < names[n].key.len; len++) {
             if (names[n].key.data[len] == '.') {
-                dot = 1;
+                dot = 1;//标识是否有通配符
                 break;
             }
         }
 
+		
         name = ngx_array_push(&curr_names);
         if (name == NULL) {
             return NGX_ERROR;
@@ -523,7 +530,8 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
 
         next_names.nelts = 0;
 
-        if (names[n].key.len != len) {
+		
+        if (names[n].key.len != len) {//表示'.'后还有字符
             next_name = ngx_array_push(&next_names);
             if (next_name == NULL) {
                 return NGX_ERROR;
@@ -540,12 +548,13 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
 #endif
         }
 
+		
         for (i = n + 1; i < nelts; i++) {
             if (ngx_strncmp(names[n].key.data, names[i].key.data, len) != 0) {
                 break;
             }
 
-            if (!dot
+            if (!dot/* names[n]里无'.' */
                 && names[i].key.len > len
                 && names[i].key.data[len] != '.')
             {
@@ -582,13 +591,13 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
 
             wdc = (ngx_hash_wildcard_t *) h.hash;
 
-            if (names[n].key.len == len) {
+            if (names[n].key.len == len) {//已是最后一节字符串
                 wdc->value = names[n].value;
             }
 
-            name->value = (void *) ((uintptr_t) wdc | (dot ? 3 : 2));
+            name->value = (void *) ((uintptr_t) wdc | (dot ? 3 : 2));/* 末两位，高位为1表示是哈希表指针，低位为1表示每个value还可再分 */
 
-        } else if (dot) {
+        } else if (dot) {/* 低位为1，表示value指针 */
             name->value = (void *) ((uintptr_t) name->value | 1);
         }
     }
