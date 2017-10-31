@@ -101,7 +101,7 @@ ngx_hash_find_wc_head(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
 
         if ((uintptr_t) value & 2) {
 
-            if (n == 0) {
+            if (n == 0) {//n为0，表示没有'.'分隔符
 
                 /* "example.com" */
 
@@ -144,6 +144,7 @@ ngx_hash_find_wc_head(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
 }
 
 
+/* 通配符在末端的哈希搜索 */
 void *
 ngx_hash_find_wc_tail(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
 {
@@ -156,6 +157,7 @@ ngx_hash_find_wc_tail(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
 
     key = 0;
 
+	/* 关键字使用'.'分割，先取第一个关键字 */
     for (i = 0; i < len; i++) {
         if (name[i] == '.') {
             break;
@@ -164,7 +166,7 @@ ngx_hash_find_wc_tail(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
         key = ngx_hash(key, name[i]);
     }
 
-    if (i == len) {
+    if (i == len) {/* 忽略最后一个关键字 */
         return NULL;
     }
 
@@ -186,19 +188,19 @@ ngx_hash_find_wc_tail(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
          *     11 - value is pointer to wildcard hash allowing "example.*".
          */
 
-        if ((uintptr_t) value & 2) {
+        if ((uintptr_t) value & 2) {//表示值为下一级哈希表指针
 
             i++;
 
             hwc = (ngx_hash_wildcard_t *) ((uintptr_t) value & (uintptr_t) ~3);
 
-            value = ngx_hash_find_wc_tail(hwc, &name[i], len - i);
+            value = ngx_hash_find_wc_tail(hwc, &name[i], len - i);//先在下一级哈希表里搜索
 
             if (value) {
                 return value;
             }
 
-            return hwc->value;
+            return hwc->value;//如果不在下一级
         }
 
         return value;
@@ -460,7 +462,8 @@ found:
 }
 
 
-/* 支持通配符的哈希表初始化 */
+/* 支持通配符的哈希表初始化
+ */
 ngx_int_t
 ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
     ngx_uint_t nelts)
@@ -487,7 +490,7 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
         return NGX_ERROR;
     }
 
-    for (n = 0; n < nelts; n = i) {//每个key-value对，依次执行
+    for (n = 0; n < nelts; n = i) {
 
 #if 0
         ngx_log_error(NGX_LOG_ALERT, hinit->pool->log, 0,
@@ -496,12 +499,12 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
 
         dot = 0;
 
-		/* 使用第一个'.'字符分割字符串，前部分压入到curr_names array,后部分
+		/* 把key以'.'字符分割，然后逐次插入每个关键字
 		 * 压入到next_names array
 		 */
         for (len = 0; len < names[n].key.len; len++) {
             if (names[n].key.data[len] == '.') {
-                dot = 1;//标识是否有通配符
+                dot = 1;//标识是否有分隔符
                 break;
             }
         }
@@ -531,7 +534,8 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
         next_names.nelts = 0;
 
 		
-        if (names[n].key.len != len) {//表示'.'后还有字符
+		/* 说明分隔符'.'后还有字符 */
+        if (names[n].key.len != len) {
             next_name = ngx_array_push(&next_names);
             if (next_name == NULL) {
                 return NGX_ERROR;
@@ -554,7 +558,7 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
                 break;
             }
 
-            if (!dot/* names[n]里无'.' */
+            if (!dot/* names[n]里无'.',摘除单独的类似com形式 */
                 && names[i].key.len > len
                 && names[i].key.data[len] != '.')
             {
