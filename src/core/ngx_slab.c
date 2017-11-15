@@ -72,7 +72,7 @@ static ngx_uint_t  ngx_slab_max_size;
 static ngx_uint_t  ngx_slab_exact_size;
 static ngx_uint_t  ngx_slab_exact_shift;
 
-
+/* slab池初始化 */
 void
 ngx_slab_init(ngx_slab_pool_t *pool)
 {
@@ -97,10 +97,10 @@ ngx_slab_init(ngx_slab_pool_t *pool)
     p = (u_char *) pool + sizeof(ngx_slab_pool_t);
     size = pool->end - p;
 
-    ngx_slab_junk(p, size);
+    ngx_slab_junk(p, size);//内存重置0
 
     slots = (ngx_slab_page_t *) p;
-    n = ngx_pagesize_shift - pool->min_shift;
+    n = ngx_pagesize_shift - pool->min_shift;//大小为2<<pool->min_shift -- 2<<ngx_pagesize_shift-1共n个slots
 
     for (i = 0; i < n; i++) {
         slots[i].slab = 0;
@@ -110,7 +110,7 @@ ngx_slab_init(ngx_slab_pool_t *pool)
 
     p += n * sizeof(ngx_slab_page_t);
 
-    pages = (ngx_uint_t) (size / (ngx_pagesize + sizeof(ngx_slab_page_t)));
+    pages = (ngx_uint_t) (size / (ngx_pagesize + sizeof(ngx_slab_page_t)));//pages个用作slab存储的内存页
 
     ngx_memzero(p, pages * sizeof(ngx_slab_page_t));
 
@@ -125,7 +125,7 @@ ngx_slab_init(ngx_slab_pool_t *pool)
 
     pool->start = (u_char *)
                   ngx_align_ptr((uintptr_t) p + pages * sizeof(ngx_slab_page_t),
-                                 ngx_pagesize);
+                                 ngx_pagesize);//用作slab储存的内存起始地址
 
     m = pages - (pool->end - pool->start) / ngx_pagesize;
     if (m > 0) {
@@ -138,6 +138,7 @@ ngx_slab_init(ngx_slab_pool_t *pool)
 }
 
 
+/* 从slab中分配内存 */
 void *
 ngx_slab_alloc(ngx_slab_pool_t *pool, size_t size)
 {
@@ -152,7 +153,7 @@ ngx_slab_alloc(ngx_slab_pool_t *pool, size_t size)
     return p;
 }
 
-
+/* 从slab中分配一个size大小的内存 */
 void *
 ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
 {
@@ -161,7 +162,7 @@ ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
     ngx_uint_t        i, slot, shift, map;
     ngx_slab_page_t  *page, *prev, *slots;
 
-    if (size >= ngx_slab_max_size) {
+    if (size >= ngx_slab_max_size) {//分配的内存大小大于内存页的一半，则直接按页分配，而不是用slab块
 
         ngx_log_debug1(NGX_LOG_DEBUG_ALLOC, ngx_cycle->log, 0,
                        "slab alloc: %uz", size);
@@ -205,7 +206,7 @@ ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
                 bitmap = (uintptr_t *) (pool->start + p);
 
                 map = (1 << (ngx_pagesize_shift - shift))
-                          / (sizeof(uintptr_t) * 8);
+                          / (sizeof(uintptr_t) * 8);//
 
                 for (n = 0; n < map; n++) {
 
@@ -328,21 +329,27 @@ ngx_slab_alloc_locked(ngx_slab_pool_t *pool, size_t size)
         }
     }
 
-    page = ngx_slab_alloc_pages(pool, 1);
+    page = ngx_slab_alloc_pages(pool, 1);//分配一页内存
 
     if (page) {
-        if (shift < ngx_slab_exact_shift) {
+        if (shift < ngx_slab_exact_shift) {//small内存的分配
             p = (page - pool->pages) << ngx_pagesize_shift;
-            bitmap = (uintptr_t *) (pool->start + p);
+            bitmap = (uintptr_t *) (pool->start + p);//每个slab对应的内存页的地址
 
-            s = 1 << shift;
+            s = 1 << shift;//slab存储的对象大小
+
+			/* 1 << (ngx_pagesize_shift - shift)表示每个内存页可以容纳的slab存储对象的数量
+			 * /8表示一个一个字节占8个位
+			 * /s表示字节所占slab存储对象的数量
+			 * n为一页内存的slab存储对象的数量使用的位图所占的slab对象个数
+			 */
             n = (1 << (ngx_pagesize_shift - shift)) / 8 / s;
 
             if (n == 0) {
                 n = 1;
             }
 
-            bitmap[0] = (2 << n) - 1;
+            bitmap[0] = (2 << n) - 1;//1<<n-1为n位的1，代表n个slab存储对象已被使用，加上新分配的一个位总共(n+1)位，正好为2<<n-1
 
             map = (1 << (ngx_pagesize_shift - shift)) / (sizeof(uintptr_t) * 8);
 
@@ -617,7 +624,7 @@ fail:
     return;
 }
 
-
+/* 从slab池中分配pages页内存 */
 static ngx_slab_page_t *
 ngx_slab_alloc_pages(ngx_slab_pool_t *pool, ngx_uint_t pages)
 {
@@ -627,8 +634,8 @@ ngx_slab_alloc_pages(ngx_slab_pool_t *pool, ngx_uint_t pages)
 
         if (page->slab >= pages) {
 
-            if (page->slab > pages) {
-                page[pages].slab = page->slab - pages;
+            if (page->slab > pages) {//此时内存页有富裕
+                page[pages].slab = page->slab - pages;//剩余的内存页数目
                 page[pages].next = page->next;
                 page[pages].prev = page->prev;
 
@@ -642,7 +649,7 @@ ngx_slab_alloc_pages(ngx_slab_pool_t *pool, ngx_uint_t pages)
                 page->next->prev = page->prev;
             }
 
-            page->slab = pages | NGX_SLAB_PAGE_START;
+            page->slab = pages | NGX_SLAB_PAGE_START;/* pages页内存的第一页属性设置 */
             page->next = NULL;
             page->prev = NGX_SLAB_PAGE;
 
@@ -650,7 +657,7 @@ ngx_slab_alloc_pages(ngx_slab_pool_t *pool, ngx_uint_t pages)
                 return page;
             }
 
-            for (p = page + 1; pages; pages--) {
+            for (p = page + 1; pages; pages--) {/* pages页内存的非第一页属性设置 */
                 p->slab = NGX_SLAB_PAGE_BUSY;
                 p->next = NULL;
                 p->prev = NGX_SLAB_PAGE;
@@ -666,7 +673,7 @@ ngx_slab_alloc_pages(ngx_slab_pool_t *pool, ngx_uint_t pages)
     return NULL;
 }
 
-
+/* 从slab池中释放n页内存 */
 static void
 ngx_slab_free_pages(ngx_slab_pool_t *pool, ngx_slab_page_t *page,
     ngx_uint_t pages)

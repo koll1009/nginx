@@ -195,7 +195,7 @@ ngx_module_t  ngx_event_core_module = {
     NGX_MODULE_V1_PADDING
 };
 
-
+/* 处理事件和定时器的函数 */
 void
 ngx_process_events_and_timers(ngx_cycle_t *cycle)
 {

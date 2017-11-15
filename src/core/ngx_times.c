@@ -21,11 +21,11 @@
 #define NGX_TIME_SLOTS   64
 
 static ngx_uint_t        slot;
-static ngx_atomic_t      ngx_time_lock;
+static ngx_atomic_t      ngx_time_lock;//ngx_atomic_t为整型值
 
 volatile ngx_msec_t      ngx_current_msec;
 volatile ngx_time_t     *ngx_cached_time;
-volatile ngx_str_t       ngx_cached_err_log_time;
+volatile ngx_str_t       ngx_cached_err_log_time;//错误日志时间
 volatile ngx_str_t       ngx_cached_http_time;
 volatile ngx_str_t       ngx_cached_http_log_time;
 volatile ngx_str_t       ngx_cached_http_log_iso8601;
@@ -71,7 +71,7 @@ ngx_time_init(void)
 }
 
 
-/* 更新时间 */
+/* 更新所有时间 */
 void
 ngx_time_update(void)
 {
@@ -183,6 +183,7 @@ ngx_time_update(void)
 
 #if !(NGX_WIN32)
 
+/* 更新信号安全时间，只更新ngx_cached_err_log_time变量 */
 void
 ngx_time_sigsafe_update(void)
 {
@@ -192,11 +193,11 @@ ngx_time_sigsafe_update(void)
     ngx_time_t      *tp;
     struct timeval   tv;
 
-    if (!ngx_trylock(&ngx_time_lock)) {
+    if (!ngx_trylock(&ngx_time_lock)) {//只允许一个线程update
         return;
     }
 
-    ngx_gettimeofday(&tv);
+    ngx_gettimeofday(&tv);//取当前时间
 
     sec = tv.tv_sec;
 
@@ -213,7 +214,7 @@ ngx_time_sigsafe_update(void)
         slot++;
     }
 
-    ngx_gmtime(sec + cached_gmtoff * 60, &tm);
+    ngx_gmtime(sec + cached_gmtoff * 60, &tm);//转换成日期信息
 
     p = &cached_err_log_time[slot][0];
 
@@ -277,7 +278,7 @@ ngx_http_cookie_time(u_char *buf, time_t t)
 }
 
 
-//转换成时间
+//转换成日期
 void
 ngx_gmtime(time_t t, ngx_tm_t *tp)
 {

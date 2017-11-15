@@ -86,7 +86,7 @@ int eventfd(u_int initval)
 
 
 typedef struct {
-    ngx_uint_t  events;
+    ngx_uint_t  events;//事件数量
     ngx_uint_t  aio_requests;
 } ngx_epoll_conf_t;
 
@@ -145,7 +145,7 @@ static ngx_command_t  ngx_epoll_commands[] = {
       ngx_null_command
 };
 
-
+/* nginx epoll模块上下文 */
 ngx_event_module_t  ngx_epoll_module_ctx = {
     &epoll_name,
     ngx_epoll_create_conf,               /* create configuration */
@@ -284,7 +284,7 @@ failed:
 
 #endif
 
-
+/* epoll模块初始化 */
 static ngx_int_t
 ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
 {
@@ -293,7 +293,7 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
     epcf = ngx_event_get_conf(cycle->conf_ctx, ngx_epoll_module);
 
     if (ep == -1) {
-        ep = epoll_create(cycle->connection_n / 2);
+        ep = epoll_create(cycle->connection_n / 2);//创建epoll事件池
 
         if (ep == -1) {
             ngx_log_error(NGX_LOG_EMERG, cycle->log, ngx_errno,
@@ -324,7 +324,7 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
 
     ngx_io = ngx_os_io;
 
-    ngx_event_actions = ngx_epoll_module_ctx.actions;
+    ngx_event_actions = ngx_epoll_module_ctx.actions;//设置事件函数集
 
 #if (NGX_HAVE_CLEAR_EVENT)
     ngx_event_flags = NGX_USE_CLEAR_EVENT
@@ -553,7 +553,7 @@ ngx_epoll_del_connection(ngx_connection_t *c, ngx_uint_t flags)
     return NGX_OK;
 }
 
-
+/* epoll模块事件处理函数 */
 static ngx_int_t
 ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 {
@@ -570,7 +570,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "epoll timer: %M", timer);
 
-    events = epoll_wait(ep, event_list, (int) nevents, timer);
+    events = epoll_wait(ep, event_list, (int) nevents, timer);//取事件数目
 
     err = (events == -1) ? ngx_errno : 0;
 
@@ -578,7 +578,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         ngx_time_update();
     }
 
-    if (err) {
+    if (err) {//处理错误
         if (err == NGX_EINTR) {
 
             if (ngx_event_timer_alarm) {
@@ -596,7 +596,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         return NGX_ERROR;
     }
 
-    if (events == 0) {
+    if (events == 0) {//无事件发生
         if (timer != NGX_TIMER_INFINITE) {
             return NGX_OK;
         }
@@ -606,7 +606,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
         return NGX_ERROR;
     }
 
-    ngx_mutex_lock(ngx_posted_events_mutex);
+    ngx_mutex_lock(ngx_posted_events_mutex);//加互斥锁
 
     for (i = 0; i < events; i++) {
         c = event_list[i].data.ptr;
@@ -634,7 +634,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
                        "epoll: fd:%d ev:%04XD d:%p",
                        c->fd, revents, event_list[i].data.ptr);
 
-        if (revents & (EPOLLERR|EPOLLHUP)) {
+        if (revents & (EPOLLERR|EPOLLHUP)) {//有错误
             ngx_log_debug2(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                            "epoll_wait() error on fd:%d ev:%04XD",
                            c->fd, revents);

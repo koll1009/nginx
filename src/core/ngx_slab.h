@@ -21,7 +21,7 @@ struct ngx_slab_page_s {
     uintptr_t         prev;
 };
 
-
+/* slab³Ø½á¹¹Ìå */
 typedef struct {
     ngx_atomic_t      lock;
 

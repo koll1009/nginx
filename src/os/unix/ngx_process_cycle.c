@@ -286,7 +286,7 @@ ngx_master_process_cycle(ngx_cycle_t *cycle)
     }
 }
 
-
+/* worker process的处理函数 */
 void
 ngx_single_process_cycle(ngx_cycle_t *cycle)
 {
@@ -297,6 +297,7 @@ ngx_single_process_cycle(ngx_cycle_t *cycle)
         exit(2);
     }
 
+	/* 模块进程初始化 */
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->init_process) {
             if (ngx_modules[i]->init_process(cycle) == NGX_ERROR) {
@@ -714,7 +715,7 @@ ngx_master_process_exit(ngx_cycle_t *cycle)
     exit(0);
 }
 
-
+/* worker process主函数 */
 static void
 ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
 {
@@ -827,7 +828,7 @@ ngx_worker_process_cycle(ngx_cycle_t *cycle, void *data)
     }
 }
 
-
+/* 工作进程初始化 */
 static void
 ngx_worker_process_init(ngx_cycle_t *cycle, ngx_uint_t priority)
 {

@@ -86,6 +86,7 @@ ngx_create_listening(ngx_conf_t *cf, void *sockaddr, socklen_t socklen)
 }
 
 
+/* 设置继承的套接字 */
 ngx_int_t
 ngx_set_inherited_sockets(ngx_cycle_t *cycle)
 {
@@ -110,7 +111,7 @@ ngx_set_inherited_sockets(ngx_cycle_t *cycle)
         }
 
         ls[i].socklen = NGX_SOCKADDRLEN;
-        if (getsockname(ls[i].fd, ls[i].sockaddr, &ls[i].socklen) == -1) {//取
+        if (getsockname(ls[i].fd, ls[i].sockaddr, &ls[i].socklen) == -1) {//取本地socket地址
             ngx_log_error(NGX_LOG_CRIT, cycle->log, ngx_socket_errno,
                           "getsockname() of the inherited "
                           "socket #%d failed", ls[i].fd);
@@ -152,7 +153,7 @@ ngx_set_inherited_sockets(ngx_cycle_t *cycle)
             return NGX_ERROR;
         }
 
-        len = ngx_sock_ntop(ls[i].sockaddr, ls[i].addr_text.data, len, 1);//把
+        len = ngx_sock_ntop(ls[i].sockaddr, ls[i].addr_text.data, len, 1);//把socket地址转换成ip:port字符串
         if (len == 0) {
             return NGX_ERROR;
         }

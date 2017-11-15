@@ -32,7 +32,7 @@
  *
  * The "cc" means that flags were changed.
  */
-
+/* 原子操作，比较并设值 */
 static ngx_inline ngx_atomic_uint_t
 ngx_atomic_cmp_set(ngx_atomic_t *lock, ngx_atomic_uint_t old,
     ngx_atomic_uint_t set)
@@ -42,12 +42,12 @@ ngx_atomic_cmp_set(ngx_atomic_t *lock, ngx_atomic_uint_t old,
     __asm__ volatile (
 
          NGX_SMP_LOCK
-    "    cmpxchgq  %3, %1;   "
+    "    cmpxchgq  %3, %1;   "//%3代表的set值，%1代表的lock的值，cmpxchgq命令，比较%1(目的数）和eax，相等则ZF置0 and %1=%3
     "    sete      %0;       "
 
     : "=a" (res) : "m" (*lock), "a" (old), "r" (set) : "cc", "memory");
 
-    return res;
+    return res; 
 }
 
 

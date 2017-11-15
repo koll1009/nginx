@@ -12,10 +12,10 @@
 
 
 typedef struct {
-    int     signo;
-    char   *signame;
+    int     signo;//信号号
+    char   *signame;//信号名
     char   *name;
-    void  (*handler)(int signo);
+    void  (*handler)(int signo);//信号处理函数
 } ngx_signal_t;
 
 
@@ -34,9 +34,9 @@ ngx_socket_t     ngx_channel;
 ngx_int_t        ngx_last_process;
 ngx_process_t    ngx_processes[NGX_MAX_PROCESSES];
 
-
+/* 定义的信号 */
 ngx_signal_t  signals[] = {
-    { ngx_signal_value(NGX_RECONFIGURE_SIGNAL),
+    { ngx_signal_value(NGX_RECONFIGURE_SIGNAL),//SIGHUP信号，终端接口检测到连接断开将此信号发送的终端相关的会话收进程
       "SIG" ngx_value(NGX_RECONFIGURE_SIGNAL),
       "reload",
       ngx_signal_handler },
@@ -46,37 +46,37 @@ ngx_signal_t  signals[] = {
       "reopen",
       ngx_signal_handler },
 
-    { ngx_signal_value(NGX_NOACCEPT_SIGNAL),
+    { ngx_signal_value(NGX_NOACCEPT_SIGNAL),//SIGWINCH信号，窗口大小改变，把改信号发送到前台进程组
       "SIG" ngx_value(NGX_NOACCEPT_SIGNAL),
       "",
       ngx_signal_handler },
 
-    { ngx_signal_value(NGX_TERMINATE_SIGNAL),
+    { ngx_signal_value(NGX_TERMINATE_SIGNAL),//SIGTERM信号，系统默认的中止信号，由kill(1)命令发送
       "SIG" ngx_value(NGX_TERMINATE_SIGNAL),
       "stop",
       ngx_signal_handler },
 
-    { ngx_signal_value(NGX_SHUTDOWN_SIGNAL),
+    { ngx_signal_value(NGX_SHUTDOWN_SIGNAL),//SIGQUIT信号，终端上输入退出键ctrl+\产生
       "SIG" ngx_value(NGX_SHUTDOWN_SIGNAL),
       "quit",
       ngx_signal_handler },
 
-    { ngx_signal_value(NGX_CHANGEBIN_SIGNAL),
+    { ngx_signal_value(NGX_CHANGEBIN_SIGNAL),//SIGUSR2Y
       "SIG" ngx_value(NGX_CHANGEBIN_SIGNAL),
       "",
       ngx_signal_handler },
 
-    { SIGALRM, "SIGALRM", "", ngx_signal_handler },
+    { SIGALRM, "SIGALRM", "", ngx_signal_handler },//定时器信号，alarm函数设置的定时器超时
 
-    { SIGINT, "SIGINT", "", ngx_signal_handler },
+    { SIGINT, "SIGINT", "", ngx_signal_handler },//中断信号，按delete或者ctrl+c产生
 
-    { SIGIO, "SIGIO", "", ngx_signal_handler },
+    { SIGIO, "SIGIO", "", ngx_signal_handler },//异步io信号
 
-    { SIGCHLD, "SIGCHLD", "", ngx_signal_handler },
+    { SIGCHLD, "SIGCHLD", "", ngx_signal_handler },//一个进程终止或停止时，发到父进程
 
-    { SIGSYS, "SIGSYS, SIG_IGN", "", SIG_IGN },
+    { SIGSYS, "SIGSYS, SIG_IGN", "", SIG_IGN },//无效的系统调用
 
-    { SIGPIPE, "SIGPIPE, SIG_IGN", "", SIG_IGN },
+    { SIGPIPE, "SIGPIPE, SIG_IGN", "", SIG_IGN },//写到无读进程的管道产生
 
     { 0, NULL, "", NULL }
 };
@@ -278,14 +278,14 @@ ngx_execute_proc(ngx_cycle_t *cycle, void *data)
     exit(1);
 }
 
-
+/* 初始化信号 */
 ngx_int_t
 ngx_init_signals(ngx_log_t *log)
 {
     ngx_signal_t      *sig;
     struct sigaction   sa;
 
-    for (sig = signals; sig->signo != 0; sig++) {
+    for (sig = signals; sig->signo != 0; sig++) {/* 逐个安装信号 */
         ngx_memzero(&sa, sizeof(struct sigaction));
         sa.sa_handler = sig->handler;
         sigemptyset(&sa.sa_mask);
@@ -299,7 +299,7 @@ ngx_init_signals(ngx_log_t *log)
     return NGX_OK;
 }
 
-
+/* 统一的信号处理函数 */
 void
 ngx_signal_handler(int signo)
 {
@@ -312,6 +312,7 @@ ngx_signal_handler(int signo)
 
     err = ngx_errno;
 
+	/* 取出信号值对应的ngx_signal_t结构体 */
     for (sig = signals; sig->signo != 0; sig++) {
         if (sig->signo == signo) {
             break;
@@ -328,12 +329,12 @@ ngx_signal_handler(int signo)
     case NGX_PROCESS_SINGLE:
         switch (signo) {
 
-        case ngx_signal_value(NGX_SHUTDOWN_SIGNAL):
+        case ngx_signal_value(NGX_SHUTDOWN_SIGNAL)://SIGQUIT信号，修改标识变量
             ngx_quit = 1;
             action = ", shutting down";
             break;
 
-        case ngx_signal_value(NGX_TERMINATE_SIGNAL):
+        case ngx_signal_value(NGX_TERMINATE_SIGNAL)://SIGINT SIGTERM信号
         case SIGINT:
             ngx_terminate = 1;
             action = ", exiting";
@@ -443,6 +444,7 @@ ngx_signal_handler(int signo)
 }
 
 
+/* 设置退出子进程的状态 */
 static void
 ngx_process_get_status(void)
 {
@@ -456,7 +458,7 @@ ngx_process_get_status(void)
     one = 0;
 
     for ( ;; ) {
-        pid = waitpid(-1, &status, WNOHANG);
+        pid = waitpid(-1, &status, WNOHANG);//取已经终止的进程
 
         if (pid == 0) {
             return;
@@ -469,7 +471,12 @@ ngx_process_get_status(void)
                 continue;
             }
 
-            if (err == NGX_ECHILD && one) {
+			/* ECHILD
+			 * (for waitpid() or waitid()) The process specified by pid(waitpid()) or idtype and id(waitid()) 
+			 * does not exist or is not a child of the calling process. (This can happen for one's own child 
+			 * if the action for SIGCHLD is set to SIG_IGN.
+             */
+			if (err == NGX_ECHILD && one) {
                 return;
             }
 
@@ -514,14 +521,14 @@ ngx_process_get_status(void)
 
         for (i = 0; i < ngx_last_process; i++) {
             if (ngx_processes[i].pid == pid) {
-                ngx_processes[i].status = status;
+                ngx_processes[i].status = status;//设值退出进程的状态
                 ngx_processes[i].exited = 1;
                 process = ngx_processes[i].name;
                 break;
             }
         }
 
-        if (WTERMSIG(status)) {
+        if (WTERMSIG(status)) {//取子进程因信号而终止的信号
 #ifdef WCOREDUMP
             ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
                           "%s %P exited on signal %d%s",

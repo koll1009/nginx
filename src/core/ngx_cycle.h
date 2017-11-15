@@ -30,7 +30,7 @@ typedef ngx_int_t (*ngx_shm_zone_init_pt) (ngx_shm_zone_t *zone, void *data);
 struct ngx_shm_zone_s {
     void                     *data;
     ngx_shm_t                 shm;
-    ngx_shm_zone_init_pt      init;
+    ngx_shm_zone_init_pt      init;//内存区初始化函数
     void                     *tag;
 };
 
@@ -71,7 +71,7 @@ struct ngx_cycle_s {
 };
 
 
-/* core_conf结构体 */
+/* ngx_core_module模块的配置结构体结构体 */
 typedef struct {
      ngx_flag_t               daemon;//守护进程标志
      ngx_flag_t               master;//主进程标志
@@ -100,7 +100,7 @@ typedef struct {
      ngx_str_t                pid;
      ngx_str_t                oldpid;
 
-     ngx_array_t              env;
+     ngx_array_t              env;//环境数组
      char                   **environment;
 
 #if (NGX_THREADS)

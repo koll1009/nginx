@@ -114,7 +114,7 @@ struct ngx_event_s {
     unsigned         available:1;
 #endif
 
-    ngx_event_handler_pt  handler;
+    ngx_event_handler_pt  handler;//事件处理函数
 
 
 #if (NGX_HAVE_AIO)

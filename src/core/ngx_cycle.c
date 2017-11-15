@@ -237,7 +237,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
 
-    senv = environ;
+    senv = environ;//设置环境变量
 
 
     ngx_memzero(&conf, sizeof(ngx_conf_t));
@@ -283,6 +283,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
                        cycle->conf_file.data);
     }
 
+	/* 初始化所有的core module */
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_CORE_MODULE) {
             continue;
@@ -305,7 +306,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         return cycle;
     }
 
-    ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
+    ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);//取ngx_core_module的配置上下文
 
     if (ngx_test_config) {
 
@@ -336,7 +337,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     }
 
 
-    if (ngx_test_lockfile(cycle->lock_file.data, log) != NGX_OK) {
+    if (ngx_test_lockfile(cycle->lock_file.data, log) != NGX_OK) {//
         goto failed;
     }
 
@@ -390,7 +391,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         }
 
 #if !(NGX_WIN32)
-        if (fcntl(file[i].fd, F_SETFD, FD_CLOEXEC) == -1) {
+        if (fcntl(file[i].fd, F_SETFD, FD_CLOEXEC) == -1) {//文件在exec时会自动关闭
             ngx_log_error(NGX_LOG_EMERG, log, ngx_errno,
                           "fcntl(FD_CLOEXEC) \"%s\" failed",
                           file[i].name.data);
@@ -408,6 +409,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
     part = &cycle->shared_memory.part;
     shm_zone = part->elts;
 
+	/*  */
     for (i = 0; /* void */ ; i++) {
 
         if (i >= part->nelts) {
@@ -431,6 +433,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         opart = &old_cycle->shared_memory.part;
         oshm_zone = opart->elts;
 
+		/* 优先复用old shared memory  */
         for (n = 0; /* void */ ; n++) {
 
             if (n >= opart->nelts) {
@@ -455,7 +458,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
             }
 
             if (shm_zone[i].shm.size == oshm_zone[n].shm.size) {
-                shm_zone[i].shm.addr = oshm_zone[n].shm.addr;
+                shm_zone[i].shm.addr = oshm_zone[n].shm.addr;//复用old shared memory
 
                 if (shm_zone[i].init(&shm_zone[i], oshm_zone[n].data)
                     != NGX_OK)
@@ -471,7 +474,7 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
             break;
         }
 
-        if (ngx_shm_alloc(&shm_zone[i].shm) != NGX_OK) {
+        if (ngx_shm_alloc(&shm_zone[i].shm) != NGX_OK) {//新建
             goto failed;
         }
 
@@ -942,7 +945,7 @@ ngx_init_zone_pool(ngx_cycle_t *cycle, ngx_shm_zone_t *zn)
     }
 
     sp->end = zn->shm.addr + zn->shm.size;
-    sp->min_shift = 3;
+    sp->min_shift = 3;//最小分配字节为8个
     sp->addr = zn->shm.addr;
 
 #if (NGX_HAVE_ATOMIC_OPS)
@@ -970,6 +973,7 @@ ngx_init_zone_pool(ngx_cycle_t *cycle, ngx_shm_zone_t *zn)
 }
 
 
+/* 创建进程号文件，用来保存进程id */
 ngx_int_t
 ngx_create_pidfile(ngx_str_t *name, ngx_log_t *log)
 {

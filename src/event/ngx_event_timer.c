@@ -48,13 +48,13 @@ ngx_event_timer_init(ngx_log_t *log)
 }
 
 
-ngx_msec_t
-ngx_event_find_timer(void)
+/* findding'shi'qi */
+ngx_msec_t ngx_event_find_timer(void)
 {
     ngx_msec_int_t      timer;
     ngx_rbtree_node_t  *node, *root, *sentinel;
 
-    if (ngx_event_timer_rbtree.root == &ngx_event_timer_sentinel) {
+    if (ngx_event_timer_rbtree.root == &ngx_event_timer_sentinel) {//定时器事件树为空
         return NGX_TIMER_INFINITE;
     }
 
@@ -63,7 +63,7 @@ ngx_event_find_timer(void)
     root = ngx_event_timer_rbtree.root;
     sentinel = ngx_event_timer_rbtree.sentinel;
 
-    node = ngx_rbtree_min(root, sentinel);
+    node = ngx_rbtree_min(root, sentinel);//取计时器红黑树的最小值
 
     ngx_mutex_unlock(ngx_event_timer_mutex);
 

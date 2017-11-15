@@ -304,6 +304,7 @@ ngx_atomic_fetch_add(ngx_atomic_t *value, ngx_atomic_int_t add)
 
 void ngx_spinlock(ngx_atomic_t *lock, ngx_atomic_int_t value, ngx_uint_t spin);
 
+/* 如果已加锁，返回false，否则返回true */
 #define ngx_trylock(lock)  (*(lock) == 0 && ngx_atomic_cmp_set(lock, 0, 1))
 #define ngx_unlock(lock)    *(lock) = 0
 

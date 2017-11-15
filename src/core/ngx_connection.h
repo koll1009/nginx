@@ -19,16 +19,16 @@ typedef struct ngx_listening_s  ngx_listening_t;
 struct ngx_listening_s {
     ngx_socket_t        fd;
 
-    struct sockaddr    *sockaddr;
+    struct sockaddr    *sockaddr;   //监听地址
     socklen_t           socklen;    /* size of sockaddr */
     size_t              addr_text_max_len;//最大地址长度
     ngx_str_t           addr_text;//ip:port
 
-    int                 type;
+    int                 type; //套接字类型
 
-    int                 backlog;
-    int                 rcvbuf;
-    int                 sndbuf;
+    int                 backlog;//tcp监听队列最大连接数
+    int                 rcvbuf;//接收缓冲区
+    int                 sndbuf;//发送缓冲区
 
     /* handler of accepted connection */
     ngx_connection_handler_pt   handler;
@@ -107,8 +107,8 @@ typedef enum {
 
 struct ngx_connection_s {
     void               *data;
-    ngx_event_t        *read;
-    ngx_event_t        *write;
+    ngx_event_t        *read;//连接的读事件
+    ngx_event_t        *write;//连接的写事件
 
     ngx_socket_t        fd;
 

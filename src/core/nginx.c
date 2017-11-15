@@ -417,6 +417,7 @@ main(int argc, char *const *argv)
 }
 
 
+/* 添加继承的套接字 */
 static ngx_int_t
 ngx_add_inherited_sockets(ngx_cycle_t *cycle)
 {
@@ -424,7 +425,7 @@ ngx_add_inherited_sockets(ngx_cycle_t *cycle)
     ngx_int_t         s;
     ngx_listening_t  *ls;
 
-    inherited = (u_char *) getenv(NGINX_VAR);//
+    inherited = (u_char *) getenv(NGINX_VAR);//继承的套接字放在环境变量中，key=NGINX
 
     if (inherited == NULL) {
         return NGX_OK;
@@ -466,10 +467,11 @@ ngx_add_inherited_sockets(ngx_cycle_t *cycle)
 
     ngx_inherited = 1;
 
-    return ngx_set_inherited_sockets(cycle);//设置继承的socket
+    return ngx_set_inherited_sockets(cycle);//设置继承的socket，即socket对应的ip port sendbuf等各属性
 }
 
 
+/* 设置环境变量 */
 char **
 ngx_set_environment(ngx_cycle_t *cycle, ngx_uint_t *last)
 {
@@ -494,6 +496,7 @@ ngx_set_environment(ngx_cycle_t *cycle, ngx_uint_t *last)
         }
     }
 
+	/* 现在env array中压入一个"TZ"字符串 */
     var = ngx_array_push(&ccf->env);
     if (var == NULL) {
         return NULL;
@@ -510,12 +513,12 @@ tz_found:
 
     for (i = 0; i < ccf->env.nelts; i++) {
 
-        if (var[i].data[var[i].len] == '=') {
+        if (var[i].data[var[i].len] == '=') {//此说明环境变量只有key没有value
             n++;
             continue;
         }
 
-        for (p = ngx_os_environ; *p; p++) {
+        for (p = ngx_os_environ; *p; p++) {//找出环境变量和nginx环境变量同key
 
             if (ngx_strncmp(*p, var[i].data, var[i].len) == 0
                 && (*p)[var[i].len] == '=')
