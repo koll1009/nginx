@@ -47,9 +47,9 @@
 #define NGX_CONF_2MORE       0x00001000
 #define NGX_CONF_MULTI       0x00002000
 
-#define NGX_DIRECT_CONF      0x00010000 //标识直接配置
+#define NGX_DIRECT_CONF      0x00010000 //直接赋值command type
 
-#define NGX_MAIN_CONF        0x01000000
+#define NGX_MAIN_CONF        0x01000000 //主模块配置command type
 #define NGX_ANY_CONF         0x0F000000
 
 
@@ -78,7 +78,7 @@
 
 struct ngx_command_s {
     ngx_str_t             name;//配置项名称
-    ngx_uint_t            type;//配置项类型
+    ngx_uint_t            type;//命令类型
     char               *(*set)(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);//设值配置信息的函数
     ngx_uint_t            conf;
     ngx_uint_t            offset;
@@ -109,7 +109,7 @@ struct ngx_open_file_s {
 #define NGX_MODULE_V1          0, 0, 0, 0, 0, 0, 1
 #define NGX_MODULE_V1_PADDING  0, 0, 0, 0, 0, 0, 0, 0
 
-/* module结构体 */
+/* module结构体，所有nginx模块的抽象接口，涉及模块的初始化、退出和配置文件的处理指令 */
 struct ngx_module_s {
     ngx_uint_t            ctx_index;//同一类型中的索引
     ngx_uint_t            index;//索引
@@ -121,17 +121,17 @@ struct ngx_module_s {
 
     ngx_uint_t            version;//
 
-    void                 *ctx; //指向具体模块类型的上下文，例如NGX_CORE_MODULE指向ngx_core_module_t
+    void                 *ctx; //指向具体模块类型的上下文结构体，例如NGX_CORE_MODULE指向ngx_core_module_t
     ngx_command_t        *commands;//处理nginx.conf配置文件的命令
     ngx_uint_t            type;//模块类型
 
-    ngx_int_t           (*init_master)(ngx_log_t *log);
+    ngx_int_t           (*init_master)(ngx_log_t *log);//未用
 
     ngx_int_t           (*init_module)(ngx_cycle_t *cycle);
 
     ngx_int_t           (*init_process)(ngx_cycle_t *cycle);
-    ngx_int_t           (*init_thread)(ngx_cycle_t *cycle);
-    void                (*exit_thread)(ngx_cycle_t *cycle);
+    ngx_int_t           (*init_thread)(ngx_cycle_t *cycle);//未使用
+    void                (*exit_thread)(ngx_cycle_t *cycle);//未使用
     void                (*exit_process)(ngx_cycle_t *cycle);
 
     void                (*exit_master)(ngx_cycle_t *cycle);
@@ -279,6 +279,7 @@ char *ngx_conf_check_num_bounds(ngx_conf_t *cf, void *post, void *data);
         conf = (prev == NGX_CONF_UNSET) ? default : prev;                    \
     }
 
+/* 合并宏，以上级模块作为参考值 */
 #define ngx_conf_merge_size_value(conf, prev, default)                       \
     if (conf == NGX_CONF_UNSET_SIZE) {                                       \
         conf = (prev == NGX_CONF_UNSET_SIZE) ? default : prev;               \

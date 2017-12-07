@@ -579,10 +579,12 @@ ngx_init_cycle(ngx_cycle_t *old_cycle)
         }
     }
 
+	/* 开启监听 */
     if (ngx_open_listening_sockets(cycle) != NGX_OK) {
         goto failed;
     }
 
+	/* 设置监听socket的可配置化选项 */
     if (!ngx_test_config) {
         ngx_configure_listening_sockets(cycle);
     }
@@ -923,7 +925,7 @@ ngx_cmp_sockaddr(struct sockaddr *sa1, struct sockaddr *sa2)
     return NGX_OK;
 }
 
-
+//初始化共享内存区，以slab技术减少碎片
 static ngx_int_t
 ngx_init_zone_pool(ngx_cycle_t *cycle, ngx_shm_zone_t *zn)
 {

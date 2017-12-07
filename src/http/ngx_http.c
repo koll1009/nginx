@@ -114,7 +114,11 @@ ngx_module_t  ngx_http_module = {
     NGX_MODULE_V1_PADDING
 };
 
-/*  */
+/* 解析http{}配置信息
+ * 1.直接隶属于http{}块内的配置项称为main配置项
+ * 2.直接隶属于server{}块内的配置项称为srv配置项
+ * 3.直接隶属于location{}块内的配置项称为loc配置项
+ */
 static char *
 ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -138,7 +142,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
     /* count the number of the http modules and set up their indices */
-
+	/* 统计http模块数目 */
     ngx_http_max_module = 0;
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
@@ -148,7 +152,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         ngx_modules[m]->ctx_index = ngx_http_max_module++;
     }
 
-
+	/* 依次分配主模块、server模块、location模块的配置上下文 */
     /* the http main_conf context, it is the same in the all http contexts */
 
     ctx->main_conf = ngx_pcalloc(cf->pool,
@@ -193,6 +197,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         module = ngx_modules[m]->ctx;
         mi = ngx_modules[m]->ctx_index;
 
+		/* 依次创建该模块main级别、server级别、location级别的配置上下文 */
         if (module->create_main_conf) {
             ctx->main_conf[mi] = module->create_main_conf(cf);
             if (ctx->main_conf[mi] == NULL) {
@@ -218,6 +223,8 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     pcf = *cf;
     cf->ctx = ctx;
 
+
+	/* 每个http模块依次在解析http{}配置信息前，调用preconfiguration方法 */
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -236,7 +243,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     cf->module_type = NGX_HTTP_MODULE;
     cf->cmd_type = NGX_HTTP_MAIN_CONF;
-    rv = ngx_conf_parse(cf, NULL);
+    rv = ngx_conf_parse(cf, NULL);/* 解析http{}块内的配置项 */
 
     if (rv != NGX_CONF_OK) {
         goto failed;
@@ -267,14 +274,14 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             }
         }
 
-        rv = ngx_http_merge_servers(cf, cmcf, module, mi);
+        rv = ngx_http_merge_servers(cf, cmcf, module, mi);//合并main级别 server级别的相同字段
         if (rv != NGX_CONF_OK) {
             goto failed;
         }
     }
 
 
-    /* create location trees */
+    /* create location trees 创建location二叉树，便于快速检索 */
 
     for (s = 0; s < cmcf->servers.nelts; s++) {
 
@@ -558,7 +565,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     return NGX_OK;
 }
 
-
+/* 合并模块@module的main级别、server级别的同类项 */
 static char *
 ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
     ngx_http_module_t *module, ngx_uint_t ctx_index)
@@ -574,6 +581,7 @@ ngx_http_merge_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
     saved = *ctx;
     rv = NGX_CONF_OK;
 
+	/* 依次合并每个server{}项 */
     for (s = 0; s < cmcf->servers.nelts; s++) {
 
         /* merge the server{}s' srv_conf's */
@@ -666,6 +674,7 @@ ngx_http_merge_locations(ngx_conf_t *cf, ngx_queue_t *locations,
 }
 
 
+/* 初始化 */
 static ngx_int_t
 ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_http_core_loc_conf_t *pclcf)
@@ -686,7 +695,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         return NGX_OK;
     }
 
-    ngx_queue_sort(locations, ngx_http_cmp_locations);
+    ngx_queue_sort(locations, ngx_http_cmp_locations);//所有location排序
 
     named = NULL;
     n = 0;
@@ -888,6 +897,7 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
 }
 
 
+/*  */
 static ngx_int_t
 ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
 {

@@ -52,7 +52,7 @@ ngx_module_t *ngx_modules[] = {
     &ngx_core_module,  //core module
     &ngx_errlog_module,//core module
     &ngx_conf_module,
-    &ngx_events_module,//core module
+    &ngx_events_module,//core module，统一管理所有的NGX_EVENT_MODULE
     &ngx_event_core_module,
     &ngx_epoll_module,
     &ngx_http_module,  //core module

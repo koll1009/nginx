@@ -2616,6 +2616,7 @@ ngx_http_cleanup_add(ngx_http_request_t *r, size_t size)
 }
 
 
+/* 解析server{}配置项 */
 static char *
 ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -2636,7 +2637,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     http_ctx = cf->ctx;
-    ctx->main_conf = http_ctx->main_conf;
+    ctx->main_conf = http_ctx->main_conf;//共享main级别的配置信息
 
     /* the server{}'s srv_conf */
 
@@ -2705,6 +2706,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     *cf = pcf;
 
+	/* server{}配置项解析成功，但未分配监听信息 */
     if (rv == NGX_CONF_OK && !cscf->listen) {
         ngx_memzero(&lsopt, sizeof(ngx_http_listen_opt_t));
 
@@ -2740,6 +2742,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 }
 
 
+/* location{}配置信息解析 */
 static char *
 ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -2758,7 +2761,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
-    pctx = cf->ctx;
+    pctx = cf->ctx;//指向上级，即location{}父级location{}或者server{}配置上下文
     ctx->main_conf = pctx->main_conf;
     ctx->srv_conf = pctx->srv_conf;
 
@@ -2918,7 +2921,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
-    if (ngx_http_add_location(cf, &pclcf->locations, clcf) != NGX_OK) {
+    if (ngx_http_add_location(cf, &pclcf->locations, clcf) != NGX_OK) {//添加到location队列中
         return NGX_CONF_ERROR;
     }
 
@@ -3073,14 +3076,15 @@ ngx_http_core_type(ngx_conf_t *cf, ngx_command_t *dummy, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/* ngx_http_core_module的preconfiguration函数 */
 static ngx_int_t
 ngx_http_core_preconfiguration(ngx_conf_t *cf)
 {
-    return ngx_http_variables_add_core_vars(cf);
+    return ngx_http_variables_add_core_vars(cf);//添加核心变量
 }
 
 
+/* ngx_http_core_module模块的创建main conf方法 */
 static void *
 ngx_http_core_create_main_conf(ngx_conf_t *cf)
 {
@@ -3144,6 +3148,7 @@ ngx_http_core_init_main_conf(ngx_conf_t *cf, void *conf)
 }
 
 
+/* 创建ngx_http_core_module的srv配置结构体 */
 static void *
 ngx_http_core_create_srv_conf(ngx_conf_t *cf)
 {
@@ -3627,6 +3632,7 @@ ngx_http_core_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 }
 
 
+/* 处理listen配置项 */
 static char *
 ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {

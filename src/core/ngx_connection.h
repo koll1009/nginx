@@ -38,7 +38,7 @@ struct ngx_listening_s {
     ngx_log_t           log;
     ngx_log_t          *logp;
 
-    size_t              pool_size;
+    size_t              pool_size;//为新连接建立内存池的大小
     /* should be here because of the AcceptEx() preread */
     size_t              post_accept_buffer_size;
     /* should be here because of the deferred accept */
@@ -49,12 +49,12 @@ struct ngx_listening_s {
 
     unsigned            open:1;
     unsigned            remain:1;
-    unsigned            ignore:1;
+    unsigned            ignore:1;//标志位，为1时跳过开启监听
 
     unsigned            bound:1;       /* already bound */
     unsigned            inherited:1;   /* inherited from previous process */
     unsigned            nonblocking_accept:1;
-    unsigned            listen:1;
+    unsigned            listen:1;//监听标志位
     unsigned            nonblocking:1;
     unsigned            shared:1;    /* shared between threads or processes */
     unsigned            addr_ntop:1;
@@ -104,27 +104,28 @@ typedef enum {
 #define NGX_LOWLEVEL_BUFFERED  0x0f
 #define NGX_SSL_BUFFERED       0x01
 
-
+/* 被动连接的结构体 */
 struct ngx_connection_s {
-    void               *data;
-    ngx_event_t        *read;//连接的读事件
-    ngx_event_t        *write;//连接的写事件
+    void               *data;//连接未使用是，该指针用作next指针；当连接使用时，意义由模块而定
+    ngx_event_t        *read;//读事件
+    ngx_event_t        *write;//写事件
 
     ngx_socket_t        fd;
 
-    ngx_recv_pt         recv;
-    ngx_send_pt         send;
-    ngx_recv_chain_pt   recv_chain;
-    ngx_send_chain_pt   send_chain;
+    ngx_recv_pt         recv;//读网络流的方法
+    ngx_send_pt         send;//写网络流的方法
+    ngx_recv_chain_pt   recv_chain;//以ngx_chain_t链表为参数来接收网络字符流的方法
+    ngx_send_chain_pt   send_chain;//以ngx_chain_t链表为参数来发送网络字符流的方法
 
-    ngx_listening_t    *listening;
+    ngx_listening_t    *listening;//连接对应的监听对象
 
-    off_t               sent;
+    off_t               sent;//已发送字节数
 
     ngx_log_t          *log;
 
     ngx_pool_t         *pool;
 
+	/* 连接对应的客户端socket的地址、长度和ip:port字符串 */
     struct sockaddr    *sockaddr;
     socklen_t           socklen;
     ngx_str_t           addr_text;
@@ -133,15 +134,15 @@ struct ngx_connection_s {
     ngx_ssl_connection_t  *ssl;
 #endif
 
-    struct sockaddr    *local_sockaddr;
+    struct sockaddr    *local_sockaddr;//本机监听端口对应的地址
 
     ngx_buf_t          *buffer;
 
-    ngx_queue_t         queue;
+    ngx_queue_t         queue;//以双向链表插入cycle的resuable_connections_queues中
 
-    ngx_atomic_uint_t   number;
+    ngx_atomic_uint_t   number;//连接使用次数
 
-    ngx_uint_t          requests;
+    ngx_uint_t          requests;//处理的请求次数
 
     unsigned            buffered:8;
 

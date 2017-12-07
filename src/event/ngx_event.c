@@ -276,6 +276,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 }
 
 
+/* 把读事件添加到事件驱动模块的跨操作系统统一入口 */
 ngx_int_t
 ngx_handle_read_event(ngx_event_t *rev, ngx_uint_t flags)
 {
@@ -423,6 +424,7 @@ ngx_handle_write_event(ngx_event_t *wev, size_t lowat)
 }
 
 
+/* 初始化ngx_event_core_module */
 static ngx_int_t
 ngx_event_module_init(ngx_cycle_t *cycle)
 {
@@ -451,13 +453,14 @@ ngx_event_module_init(ngx_cycle_t *cycle)
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
-    ngx_timer_resolution = ccf->timer_resolution;
+    ngx_timer_resolution = ccf->timer_resolution;//时间精度控制项 
 
 #if !(NGX_WIN32)
     {
     ngx_int_t      limit;
     struct rlimit  rlmt;
 
+	/* socket也是一种文件，所以连接数要跟配置的进程文件数以及进程的资源限制比较 */
     if (getrlimit(RLIMIT_NOFILE, &rlmt) == -1) {
         ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                       "getrlimit(RLIMIT_NOFILE) failed, ignored");
@@ -508,6 +511,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
 
 #endif
 
+	/* 新建共享内存，用来存储ngx_accept_mutex、ngx_connection_counter 、ngx_temp_number等字段*/
     shm.size = size;
     shm.name.len = sizeof("nginx_shared_zone");
     shm.name.data = (u_char *) "nginx_shared_zone";
@@ -572,6 +576,7 @@ ngx_timer_signal_handler(int signo)
 #endif
 
 
+/* ngx_event_core_module的进程初始化函数 */
 static ngx_int_t
 ngx_event_process_init(ngx_cycle_t *cycle)
 {
@@ -586,7 +591,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
     ecf = ngx_event_get_conf(cycle->conf_ctx, ngx_event_core_module);
 
-    if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) {
+    if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) {//是否启用负载均衡锁
         ngx_use_accept_mutex = 1;
         ngx_accept_mutex_held = 0;
         ngx_accept_mutex_delay = ecf->accept_mutex_delay;
@@ -602,7 +607,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     }
 #endif
 
-    if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {
+    if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {//初始化红黑树定时器
         return NGX_ERROR;
     }
 
@@ -611,13 +616,13 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             continue;
         }
 
-        if (ngx_modules[m]->ctx_index != ecf->use) {
+        if (ngx_modules[m]->ctx_index != ecf->use) {//寻找配置的事件模块
             continue;
         }
 
         module = ngx_modules[m]->ctx;
 
-        if (module->actions.init(cycle, ngx_timer_resolution) != NGX_OK) {
+        if (module->actions.init(cycle, ngx_timer_resolution) != NGX_OK) {//初始化事件模块
             /* fatal */
             exit(2);
         }
@@ -734,6 +739,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
     /* for each listening socket */
 
+	//
     ls = cycle->listening.elts;
     for (i = 0; i < cycle->listening.nelts; i++) {
 
@@ -875,7 +881,7 @@ ngx_send_lowat(ngx_connection_t *c, size_t lowat)
 }
 
 
-/* event {}配置项解析 */
+/* event {}配置项的解析 */
 static char *
 ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {

@@ -471,17 +471,17 @@ extern ngx_os_io_t  ngx_io;
 #define NGX_EVENT_CONF        0x02000000
 
 
-/* event 核心模块配置上下文 */
+/* ngx_event_core_module模块的配置结构体 */
 typedef struct {
-    ngx_uint_t    connections;
-    ngx_uint_t    use;
+    ngx_uint_t    connections;//连接池大小
+    ngx_uint_t    use;//选用事件模块编号
 
-    ngx_flag_t    multi_accept;
-    ngx_flag_t    accept_mutex;
+    ngx_flag_t    multi_accept;//标志位，为1时，接收到一个新连接事件时一次性建立尽可能多的连接
+    ngx_flag_t    accept_mutex;//启用负载均衡锁标志
 
-    ngx_msec_t    accept_mutex_delay;
+    ngx_msec_t    accept_mutex_delay;//负载均衡锁会让有些worker进程拿不到锁时延迟建立新连接，该字段为延迟时间
 
-    u_char       *name;
+    u_char       *name;//选用时间模块的名字，与use匹配
 
 #if (NGX_DEBUG)
     ngx_array_t   debug_connection;
@@ -499,6 +499,7 @@ typedef struct {
 } ngx_event_module_t;
 
 
+/* 原子性统计变量的指针 */
 extern ngx_atomic_t          *ngx_connection_counter;
 
 extern ngx_atomic_t          *ngx_accept_mutex_ptr;

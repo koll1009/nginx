@@ -48,16 +48,16 @@ struct ngx_cycle_s {
 
     ngx_queue_t               reusable_connections_queue;
 
-    ngx_array_t               listening;
+    ngx_array_t               listening;/* 监听地址数组 */
     ngx_array_t               pathes;
     ngx_list_t                open_files;
     ngx_list_t                shared_memory;
 
-    ngx_uint_t                connection_n;
+    ngx_uint_t                connection_n;//当前进程连接数
     ngx_uint_t                files_n;
 
-    ngx_connection_t         *connections;
-    ngx_event_t              *read_events;
+    ngx_connection_t         *connections; //当前进程的连接数组，带线啊哦为connecttion_n
+    ngx_event_t              *read_events;//每个进程对应一个read event，一个write event
     ngx_event_t              *write_events;
 
     ngx_cycle_t              *old_cycle;
@@ -81,7 +81,7 @@ typedef struct {
      ngx_int_t                worker_processes;//工作进程数
      ngx_int_t                debug_points;
 
-     ngx_int_t                rlimit_nofile;
+     ngx_int_t                rlimit_nofile;//工作进程可以打开的最大文件数
      ngx_int_t                rlimit_sigpending;
      off_t                    rlimit_core;
 

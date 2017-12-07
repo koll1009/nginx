@@ -142,7 +142,7 @@ typedef struct {
 
 
 typedef struct {
-    ngx_array_t                servers;         /* ngx_http_core_srv_conf_t */
+    ngx_array_t                servers;         /* ngx_http_core_srv_conf_t，每个server{}配置项都要在该数组里保存 */
 
     ngx_http_phase_engine_t    phase_engine;
 
@@ -174,7 +174,7 @@ typedef struct {
     ngx_array_t                 server_names;
 
     /* server ctx */
-    ngx_http_conf_ctx_t        *ctx;
+    ngx_http_conf_ctx_t        *ctx;//指向server模块解析对应的
 
     ngx_str_t                   server_name;
 

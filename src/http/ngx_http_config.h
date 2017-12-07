@@ -13,7 +13,7 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
-
+/* http模块配置结构体 */
 typedef struct {
     void        **main_conf;
     void        **srv_conf;
@@ -22,8 +22,8 @@ typedef struct {
 
 
 typedef struct {
-    ngx_int_t   (*preconfiguration)(ngx_conf_t *cf);
-    ngx_int_t   (*postconfiguration)(ngx_conf_t *cf);
+    ngx_int_t   (*preconfiguration)(ngx_conf_t *cf);//解析http{}前调用
+    ngx_int_t   (*postconfiguration)(ngx_conf_t *cf);//解析完http{}后调用
 
     void       *(*create_main_conf)(ngx_conf_t *cf);
     char       *(*init_main_conf)(ngx_conf_t *cf, void *conf);
@@ -47,6 +47,7 @@ typedef struct {
 #define NGX_HTTP_LMT_CONF         0x80000000
 
 
+/* main_conf srv_conf loc_conf字段在结构体ngx_http_conf_ctx_t中的偏移 */
 #define NGX_HTTP_MAIN_CONF_OFFSET  offsetof(ngx_http_conf_ctx_t, main_conf)
 #define NGX_HTTP_SRV_CONF_OFFSET   offsetof(ngx_http_conf_ctx_t, srv_conf)
 #define NGX_HTTP_LOC_CONF_OFFSET   offsetof(ngx_http_conf_ctx_t, loc_conf)

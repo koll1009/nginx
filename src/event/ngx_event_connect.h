@@ -33,10 +33,11 @@ typedef void (*ngx_event_save_peer_session_pt)(ngx_peer_connection_t *pc,
     void *data);
 #endif
 
-
+/* 主动连接结构体 */
 struct ngx_peer_connection_s {
     ngx_connection_t                *connection;
-
+	
+	/* 远端服务器的地址、长度、名称 */
     struct sockaddr                 *sockaddr;
     socklen_t                        socklen;
     ngx_str_t                       *name;

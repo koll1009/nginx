@@ -268,6 +268,7 @@ ngx_set_inherited_sockets(ngx_cycle_t *cycle)
 }
 
 
+/* 开启监听socket */
 ngx_int_t
 ngx_open_listening_sockets(ngx_cycle_t *cycle)
 {
@@ -312,7 +313,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
                 continue;
             }
 
-            s = ngx_socket(ls[i].sockaddr->sa_family, ls[i].type, 0);
+            s = ngx_socket(ls[i].sockaddr->sa_family, ls[i].type, 0);//新建一个socket
 
             if (s == -1) {
                 ngx_log_error(NGX_LOG_EMERG, log, ngx_socket_errno,
@@ -320,6 +321,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
                 return NGX_ERROR;
             }
 
+			/* 设置地址复用选项 */
             if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
                            (const void *) &reuseaddr, sizeof(int))
                 == -1)
@@ -357,7 +359,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
             /* TODO: close on exit */
 
             if (!(ngx_event_flags & NGX_USE_AIO_EVENT)) {
-                if (ngx_nonblocking(s) == -1) {
+                if (ngx_nonblocking(s) == -1) {//设置为非阻塞socket
                     ngx_log_error(NGX_LOG_EMERG, log, ngx_socket_errno,
                                   ngx_nonblocking_n " %V failed",
                                   &ls[i].addr_text);
@@ -375,7 +377,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
             ngx_log_debug2(NGX_LOG_DEBUG_CORE, log, 0,
                            "bind() %V #%d ", &ls[i].addr_text, s);
 
-            if (bind(s, ls[i].sockaddr, ls[i].socklen) == -1) {
+            if (bind(s, ls[i].sockaddr, ls[i].socklen) == -1) {//绑定地址端口
                 err = ngx_socket_errno;
 
                 if (err == NGX_EADDRINUSE && ngx_test_config) {
@@ -422,7 +424,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
                 }
             }
 #endif
-
+			/* 开始监听 */
             if (listen(s, ls[i].backlog) == -1) {
                 ngx_log_error(NGX_LOG_EMERG, log, ngx_socket_errno,
                               "listen() to %V, backlog %d failed",
@@ -437,7 +439,7 @@ ngx_open_listening_sockets(ngx_cycle_t *cycle)
                 return NGX_ERROR;
             }
 
-            ls[i].listen = 1;
+            ls[i].listen = 1;//设置监听标志
 
             ls[i].fd = s;
         }
@@ -704,6 +706,7 @@ ngx_close_listening_sockets(ngx_cycle_t *cycle)
 }
 
 
+/* 取一个连接 */
 ngx_connection_t *
 ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
 {
@@ -725,7 +728,7 @@ ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
 
     c = ngx_cycle->free_connections;
 
-    if (c == NULL) {
+    if (c == NULL) {//如果此时无可用连接，则把可重用链表的中连接关闭回收利用
         ngx_drain_connections();
         c = ngx_cycle->free_connections;
     }
@@ -935,6 +938,7 @@ ngx_reusable_connection(ngx_connection_t *c, ngx_uint_t reusable)
 }
 
 
+/* 从可重复利用链表中 */
 static void
 ngx_drain_connections(void)
 {
@@ -953,7 +957,7 @@ ngx_drain_connections(void)
         ngx_log_debug0(NGX_LOG_DEBUG_CORE, c->log, 0,
                        "reusing connection");
 
-        c->close = 1;
+        c->close = 1;//设置连接关闭标志
         c->read->handler(c->read);
     }
 }

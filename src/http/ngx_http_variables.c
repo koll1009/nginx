@@ -109,7 +109,7 @@ static ngx_int_t ngx_http_variable_pid(ngx_http_request_t *r,
  * ngx_http_variable_unknown_header_in(), but for perfomance reasons
  * they are handled using dedicated entries
  */
-
+/* httpºËÐÄ±äÁ¿ */
 static ngx_http_variable_t  ngx_http_core_variables[] = {
 
     { ngx_string("http_host"), NULL, ngx_http_variable_header,
