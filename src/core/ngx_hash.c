@@ -261,6 +261,7 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
     ngx_uint_t       i, n, key, size, start, bucket_size;
     ngx_hash_elt_t  *elt, **buckets;
 
+	/* 如果某一个哈希结点所占的内存比设置的bucketsize还要大，则错误日志记录 */
     for (n = 0; n < nelts; n++) {
         if (hinit->bucket_size < NGX_HASH_ELT_SIZE(&names[n]) + sizeof(void *))//此时一个key-value对所需内存已溢出
         {
@@ -289,12 +290,13 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
         start = hinit->max_size - 1000;
     }
 
+	/* 计算需要多少个buckets可以使得映射后的每个bucket的大小小于bucketsize */
     for (size = start; size < hinit->max_size; size++) {
 
         ngx_memzero(test, size * sizeof(u_short));
 
         for (n = 0; n < nelts; n++) {
-            if (names[n].key.data == NULL) {
+            if (names[n].key.data == NULL) {//跳过空结点
                 continue;
             }
 
@@ -332,7 +334,7 @@ ngx_hash_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names, ngx_uint_t nelts)
 found:
 
     for (i = 0; i < size; i++) {
-        test[i] = sizeof(void *);//sizeof(void*)大小的内存用于在末尾放一个value=null的ngx_hash_elt_t,标识结尾
+        test[i] = sizeof(void *);//sizeof(void*)大小的内存用于在末尾放一个value=null的ngx_hash_elt_t*指针,标识结尾
     }
 
     for (n = 0; n < nelts; n++) {
@@ -344,7 +346,7 @@ found:
         test[key] = (u_short) (test[key] + NGX_HASH_ELT_SIZE(&names[n]));//计算每个bucket需要的内存
     }
 
-    len = 0;//所有bucket需要的总内存大小
+    len = 0;//所有buckets需要的总内存大小
 
     for (i = 0; i < size; i++) {
         if (test[i] == sizeof(void *)) {//表示该bucket未有映射的结点
@@ -462,8 +464,7 @@ found:
 }
 
 
-/* 支持通配符的哈希表初始化
- */
+/* 支持通配符的哈希表初始化 */
 ngx_int_t
 ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
     ngx_uint_t nelts)
@@ -477,14 +478,14 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
 
 	
     if (ngx_array_init(&curr_names, hinit->temp_pool, nelts,
-                       sizeof(ngx_hash_key_t))
+                       sizeof(ngx_hash_key_t))//暂存父级节点，以字符'.'分割
         != NGX_OK)
     {
         return NGX_ERROR;
     }
 
     if (ngx_array_init(&next_names, hinit->temp_pool, nelts,
-                       sizeof(ngx_hash_key_t))
+                       sizeof(ngx_hash_key_t))//暂存子级节点
         != NGX_OK)
     {
         return NGX_ERROR;
@@ -517,7 +518,7 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
 
         name->key.len = len;
         name->key.data = names[n].key.data;
-        name->key_hash = hinit->key(name->key.data, name->key.len);
+        name->key_hash = hinit->key(name->key.data, name->key.len);//求哈希值，name为哈希结点的key
         name->value = names[n].value;
 
 #if 0
@@ -558,7 +559,7 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
                 break;
             }
 
-            if (!dot/* names[n]里无'.',摘除单独的类似com形式 */
+            if (!dot
                 && names[i].key.len > len
                 && names[i].key.data[len] != '.')
             {
@@ -581,7 +582,7 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
 #endif
         }
 
-        if (next_names.nelts) {
+        if (next_names.nelts) {//说明有子级分节，需要创建一个哈希表表示
 
             h = *hinit;
             h.hash = NULL;
@@ -595,13 +596,13 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
 
             wdc = (ngx_hash_wildcard_t *) h.hash;
 
-            if (names[n].key.len == len) {//已是最后一节字符串
+            if (names[n].key.len == len) {//如果cur_name是最后一个分节，则用wdc的value来放置names[n]的value
                 wdc->value = names[n].value;
             }
 
-            name->value = (void *) ((uintptr_t) wdc | (dot ? 3 : 2));/* 末两位，高位为1表示是哈希表指针，低位为1表示每个value还可再分 */
+            name->value = (void *) ((uintptr_t) wdc | (dot ? 3 : 2));/* 末两位，高位为1表示是哈希表指针，低位为1表示wdc的value指针有意义 */
 
-        } else if (dot) {/* 低位为1，表示value指针 */
+        } else if (dot) {/* 低位为1，表示以.结尾 */
             name->value = (void *) ((uintptr_t) name->value | 1);
         }
     }
@@ -665,6 +666,7 @@ ngx_hash_strlow(u_char *dst, u_char *src, size_t n)
 }
 
 
+/* 初始化ngx_hash_keys_arrays_t */
 ngx_int_t
 ngx_hash_keys_array_init(ngx_hash_keys_arrays_t *ha, ngx_uint_t type)
 {
@@ -720,6 +722,7 @@ ngx_hash_keys_array_init(ngx_hash_keys_arrays_t *ha, ngx_uint_t type)
 }
 
 
+/* 添加一个哈希结点 */
 ngx_int_t
 ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
     ngx_uint_t flags)
@@ -727,7 +730,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
     size_t           len;
     u_char          *p;
     ngx_str_t       *name;
-    ngx_uint_t       i, k, n, skip, last;
+    ngx_uint_t       i, k, n, skip, last;//skip、last有效字符区间首尾两端的索引
     ngx_array_t     *keys, *hwc;
     ngx_hash_key_t  *hk;
 
@@ -741,25 +744,27 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
          */
 
         n = 0;
-
+		/* 首先先check字符串，是否含有通配符，然后决定插入到哪个数组 */
         for (i = 0; i < key->len; i++) {
 
-            if (key->data[i] == '*') {
+            if (key->data[i] == '*') {//不支持前后都有通配符
                 if (++n > 1) {
                     return NGX_DECLINED;
                 }
             }
 
-            if (key->data[i] == '.' && key->data[i + 1] == '.') {
+            if (key->data[i] == '.' && key->data[i + 1] == '.') {//不支持两个..字符
                 return NGX_DECLINED;
             }
         }
 
+		/* 准许.example格式 */
         if (key->len > 1 && key->data[0] == '.') {
             skip = 1;
             goto wildcard;
         }
 
+		/* 准许*.example格式 or example.*格式 */
         if (key->len > 2) {
 
             if (key->data[0] == '*' && key->data[1] == '.') {
@@ -774,7 +779,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
             }
         }
 
-        if (n) {
+        if (n) {/* 有通配符，却不在首尾两端，也不符合规范 */
             return NGX_DECLINED;
         }
     }
@@ -783,6 +788,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
 
     k = 0;
 
+	/* 计算哈希值 */
     for (i = 0; i < last; i++) {
         if (!(flags & NGX_HASH_READONLY_KEY)) {
             key->data[i] = ngx_tolower(key->data[i]);
@@ -802,12 +808,12 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
                 continue;
             }
 
-            if (ngx_strncmp(key->data, name[i].data, last) == 0) {
+            if (ngx_strncmp(key->data, name[i].data, last) == 0) {//不准许重复添加
                 return NGX_BUSY;
             }
         }
 
-    } else {
+    } else {/* 初始化exact哈希结点数组 */
         if (ngx_array_init(&ha->keys_hash[k], ha->temp_pool, 4,
                            sizeof(ngx_str_t))
             != NGX_OK)
@@ -839,11 +845,11 @@ wildcard:
 
     /* wildcard hash */
 
-    k = ngx_hash_strlow(&key->data[skip], &key->data[skip], last - skip);
+    k = ngx_hash_strlow(&key->data[skip], &key->data[skip], last - skip);//排除通配符后其他字节的哈希值
 
     k %= ha->hsize;
 
-    if (skip == 1) {
+    if (skip == 1) {//.example.com形式
 
         /* check conflicts in exact hash for ".example.com" */
 
@@ -852,6 +858,7 @@ wildcard:
         if (name) {
             len = last - skip;
 
+			/* 检测相同项 */
             for (i = 0; i < ha->keys_hash[k].nelts; i++) {
                 if (len != name[i].len) {
                     continue;
@@ -949,7 +956,7 @@ wildcard:
     hk->key.len = last - 1;
     hk->key.data = p;
     hk->key_hash = 0;
-    hk->value = value;
+    hk->value = value;//把结点存到相应的通配符结点数组中
 
 
     /* check conflicts in wildcard hash */

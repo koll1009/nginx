@@ -50,6 +50,7 @@ typedef struct {
 } ngx_hash_combined_t;
 
 
+/* 哈希初始化描述符 */
 typedef struct {
     ngx_hash_t       *hash;
     ngx_hash_key_pt   key;
@@ -72,15 +73,15 @@ typedef struct {
 #define NGX_HASH_WILDCARD_KEY     1
 #define NGX_HASH_READONLY_KEY     2
 
-
+/* 保存哈希结点，用来初始化哈希表 */
 typedef struct {
     ngx_uint_t        hsize;
 
     ngx_pool_t       *pool;
     ngx_pool_t       *temp_pool;
 
-    ngx_array_t       keys;
-    ngx_array_t      *keys_hash;
+    ngx_array_t       keys;//不带通配符的哈希结点数组
+    ngx_array_t      *keys_hash;//用来暂存哈希节点，为了快速检索重复项，使用哈希技术
 
     ngx_array_t       dns_wc_head;
     ngx_array_t      *dns_wc_head_hash;

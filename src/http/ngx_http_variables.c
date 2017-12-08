@@ -1893,6 +1893,7 @@ ngx_http_regex_exec(ngx_http_request_t *r, ngx_http_regex_t *re, ngx_str_t *s)
 #endif
 
 
+/* http添加核心变量 */
 ngx_int_t
 ngx_http_variables_add_core_vars(ngx_conf_t *cf)
 {
@@ -1911,12 +1912,13 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
     cmcf->variables_keys->pool = cf->pool;
     cmcf->variables_keys->temp_pool = cf->pool;
 
-    if (ngx_hash_keys_array_init(cmcf->variables_keys, NGX_HASH_SMALL)
+    if (ngx_hash_keys_array_init(cmcf->variables_keys, NGX_HASH_SMALL)//初始化变量数组
         != NGX_OK)
     {
         return NGX_ERROR;
     }
 
+	//把预定义的变量依次添加到变量哈希数组中
     for (v = ngx_http_core_variables; v->name.len; v++) {
         rc = ngx_hash_add_key(cmcf->variables_keys, &v->name, v,
                               NGX_HASH_READONLY_KEY);
