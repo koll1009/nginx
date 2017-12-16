@@ -85,7 +85,7 @@ struct ngx_queue_s {
 
 #endif
 
-/* 拆分链表，h尾链表容器，以q为界拆分成h和n */
+/* 拆分链表，h尾链表容器，以q为界拆分成h和n，其中q属于链表n */
 #define ngx_queue_split(h, q, n)                                              \
     (n)->prev = (h)->prev;                                                    \
     (n)->prev->next = n;                                                      \

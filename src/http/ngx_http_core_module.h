@@ -98,23 +98,24 @@ typedef struct {
 
 
 typedef enum {
-    NGX_HTTP_POST_READ_PHASE = 0,
+    NGX_HTTP_POST_READ_PHASE = 0,//在接收玩完整的HTTP头部后处理的HTTP阶段
 
-    NGX_HTTP_SERVER_REWRITE_PHASE,
+    NGX_HTTP_SERVER_REWRITE_PHASE,//将请求的uri与location匹配前，修改请求的uri(重定向）
 
-    NGX_HTTP_FIND_CONFIG_PHASE,
-    NGX_HTTP_REWRITE_PHASE,
-    NGX_HTTP_POST_REWRITE_PHASE,
+    NGX_HTTP_FIND_CONFIG_PHASE, //请求的uri匹配，只能由ngx_http_core_module实现
+    NGX_HTTP_REWRITE_PHASE,//找到匹配的location后再修改请求的uri
 
-    NGX_HTTP_PREACCESS_PHASE,
+    NGX_HTTP_POST_REWRITE_PHASE,//
 
-    NGX_HTTP_ACCESS_PHASE,
+    NGX_HTTP_PREACCESS_PHASE,//在处理NGX_HTTP_ACCESS_PHASE阶段决定请求的访问权限前，http模块可以介入的阶段
+
+    NGX_HTTP_ACCESS_PHASE,//请求的访问权限处理阶段
     NGX_HTTP_POST_ACCESS_PHASE,
 
     NGX_HTTP_TRY_FILES_PHASE,
-    NGX_HTTP_CONTENT_PHASE,
+    NGX_HTTP_CONTENT_PHASE,//处理http请求的内容阶段
 
-    NGX_HTTP_LOG_PHASE
+    NGX_HTTP_LOG_PHASE//处理完请求记录日志阶段
 } ngx_http_phases;
 
 typedef struct ngx_http_phase_handler_s  ngx_http_phase_handler_t;
@@ -136,6 +137,7 @@ typedef struct {
 } ngx_http_phase_engine_t;
 
 
+/* ngx http阶段处理函数数组 */
 typedef struct {
     ngx_array_t                handlers;
 } ngx_http_phase_t;
@@ -159,7 +161,7 @@ typedef struct {
     ngx_uint_t                 variables_hash_max_size;
     ngx_uint_t                 variables_hash_bucket_size;
 
-    ngx_hash_keys_arrays_t    *variables_keys;//http核心变量数组
+    ngx_hash_keys_arrays_t    *variables_keys;//http核心变量数组，用以保存预定义的变量，用以初始化为支持通配符的哈希表
 
     ngx_array_t               *ports;
 
@@ -195,7 +197,7 @@ typedef struct {
     unsigned                    captures:1;
 #endif
 
-    ngx_http_core_loc_conf_t  **named_locations;
+    ngx_http_core_loc_conf_t  **named_locations;//指向所有named location配置项
 } ngx_http_core_srv_conf_t;
 
 
@@ -298,9 +300,9 @@ struct ngx_http_core_loc_conf_s {
 
     unsigned      noname:1;   /* "if () {}" block or limit_except */
     unsigned      lmt_excpt:1;
-    unsigned      named:1;
+    unsigned      named:1;//重定向标志
 
-    unsigned      exact_match:1;
+    unsigned      exact_match:1;//精确匹配标志
     unsigned      noregex:1;
 
     unsigned      auto_redirect:1;
@@ -311,7 +313,7 @@ struct ngx_http_core_loc_conf_s {
 #endif
 #endif
 
-    ngx_http_location_tree_node_t   *static_locations;
+    ngx_http_location_tree_node_t   *static_locations;//location静态搜索树
 #if (NGX_PCRE)
     ngx_http_core_loc_conf_t       **regex_locations;
 #endif
@@ -429,10 +431,11 @@ typedef struct {
     ngx_str_t                       *name;
     u_char                          *file_name;
     ngx_uint_t                       line;
-    ngx_queue_t                      list;
+    ngx_queue_t                      list;//保存name前缀相同的结点，例如location name为"name",则"name1" "name2"的结点会插入该链表
 } ngx_http_location_queue_t;
 
 
+/* location树结点描述符 */
 struct ngx_http_location_tree_node_s {
     ngx_http_location_tree_node_t   *left;
     ngx_http_location_tree_node_t   *right;

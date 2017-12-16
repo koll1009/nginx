@@ -9,7 +9,7 @@
 #include <ngx_core.h>
 
 
-/* 查找链表的中心结点
+/* 查找链表的中心结点，即索引((length)/2)
  * find the middle queue element if the queue has odd number of elements
  * or the first element of the queue's second part otherwise
  */
@@ -20,7 +20,7 @@ ngx_queue_middle(ngx_queue_t *queue)
 
     middle = ngx_queue_head(queue);
 
-    if (middle == ngx_queue_last(queue)) {//链表为空
+    if (middle == ngx_queue_last(queue)) {//链表为空或者只有middle一个结点
         return middle;
     }
 

@@ -2797,23 +2797,23 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         mod = value[1].data;
         name = &value[2];
 
-        if (len == 1 && mod[0] == '=') {
+        if (len == 1 && mod[0] == '=') {// =表示精确匹配
 
             clcf->name = *name;
             clcf->exact_match = 1;
 
-        } else if (len == 2 && mod[0] == '^' && mod[1] == '~') {
+        } else if (len == 2 && mod[0] == '^' && mod[1] == '~') {//匹配时，只要前半部分匹配就好
 
             clcf->name = *name;
             clcf->noregex = 1;
 
-        } else if (len == 1 && mod[0] == '~') {
+        } else if (len == 1 && mod[0] == '~') {//区分大小写的正则表达式
 
             if (ngx_http_core_regex_location(cf, clcf, name, 0) != NGX_OK) {
                 return NGX_CONF_ERROR;
             }
 
-        } else if (len == 2 && mod[0] == '~' && mod[1] == '*') {
+        } else if (len == 2 && mod[0] == '~' && mod[1] == '*') {//不区分大小写的正则表达式
 
             if (ngx_http_core_regex_location(cf, clcf, name, 1) != NGX_OK) {
                 return NGX_CONF_ERROR;
@@ -2865,7 +2865,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
             clcf->name = *name;
 
-            if (name->data[0] == '@') {
+            if (name->data[0] == '@') {//重定向标志
                 clcf->named = 1;
             }
         }

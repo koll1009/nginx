@@ -152,6 +152,7 @@ typedef enum {
 } ngx_http_state_e;
 
 
+/* http headerÃèÊö·û */
 typedef struct {
     ngx_str_t                         name;
     ngx_uint_t                        offset;
