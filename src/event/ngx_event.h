@@ -35,12 +35,13 @@ typedef struct {
 } ngx_event_mutex_t;
 
 
+/* 事件描述符 */
 struct ngx_event_s {
-    void            *data;
+    void            *data;//对应的连接
 
     unsigned         write:1;
 
-    unsigned         accept:1;
+    unsigned         accept:1;//是否为server socket标志，只有server socket才能accept
 
     /* used to detect the stale events in kqueue, rtsig, and epoll */
     unsigned         instance:1;

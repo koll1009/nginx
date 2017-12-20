@@ -16,6 +16,7 @@ ngx_os_io_t  ngx_io;
 static void ngx_drain_connections(void);
 
 
+/* 新建一个监听对象ngx_listening_t */
 ngx_listening_t *
 ngx_create_listening(ngx_conf_t *cf, void *sockaddr, socklen_t socklen)
 {
@@ -24,7 +25,7 @@ ngx_create_listening(ngx_conf_t *cf, void *sockaddr, socklen_t socklen)
     struct sockaddr  *sa;
     u_char            text[NGX_SOCKADDR_STRLEN];
 
-    ls = ngx_array_push(&cf->cycle->listening);
+    ls = ngx_array_push(&cf->cycle->listening);//压入栈
     if (ls == NULL) {
         return NULL;
     }
@@ -706,7 +707,7 @@ ngx_close_listening_sockets(ngx_cycle_t *cycle)
 }
 
 
-/* 取一个连接 */
+/* 取一个空闲连接ngx_connection_t */
 ngx_connection_t *
 ngx_get_connection(ngx_socket_t s, ngx_log_t *log)
 {

@@ -123,17 +123,18 @@ typedef struct ngx_http_phase_handler_s  ngx_http_phase_handler_t;
 typedef ngx_int_t (*ngx_http_phase_handler_pt)(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph);
 
+/* 阶段处理描述符 */
 struct ngx_http_phase_handler_s {
-    ngx_http_phase_handler_pt  checker;
-    ngx_http_handler_pt        handler;
-    ngx_uint_t                 next;
+    ngx_http_phase_handler_pt  checker;//checker函数
+    ngx_http_handler_pt        handler;//handler函数
+    ngx_uint_t                 next;//下一个处理阶段的索引
 };
 
 
 typedef struct {
-    ngx_http_phase_handler_t  *handlers;
-    ngx_uint_t                 server_rewrite_index;
-    ngx_uint_t                 location_rewrite_index;
+    ngx_http_phase_handler_t  *handlers;//一个请求可能经历的所有处理的方法数组
+    ngx_uint_t                 server_rewrite_index;//NGX_HTTP_SERVER_REWRITE_PHASE阶段第一个处理方法的索引
+    ngx_uint_t                 location_rewrite_index;//NGX_HTTP_REWRITE_PHASE阶段第一个处理方法的索引
 } ngx_http_phase_engine_t;
 
 
@@ -146,11 +147,11 @@ typedef struct {
 typedef struct {
     ngx_array_t                servers;         /* ngx_http_core_srv_conf_t，每个server{}配置项都要在该数组里保存 */
 
-    ngx_http_phase_engine_t    phase_engine;
+    ngx_http_phase_engine_t    phase_engine;//请求的阶段处理引擎
 
-    ngx_hash_t                 headers_in_hash;
+    ngx_hash_t                 headers_in_hash;//http head key哈希表
 
-    ngx_hash_t                 variables_hash;
+    ngx_hash_t                 variables_hash;//http变量哈希表
 
     ngx_array_t                variables;       /* ngx_http_variable_t */
     ngx_uint_t                 ncaptures;
@@ -167,7 +168,7 @@ typedef struct {
 
     ngx_uint_t                 try_files;       /* unsigned  try_files:1 */
 
-    ngx_http_phase_t           phases[NGX_HTTP_LOG_PHASE + 1];
+    ngx_http_phase_t           phases[NGX_HTTP_LOG_PHASE + 1];//用于http框架初始化时各http模块在任意阶段添加处理方法
 } ngx_http_core_main_conf_t;
 
 
@@ -249,9 +250,9 @@ typedef struct {
 typedef struct {
     ngx_http_listen_opt_t      opt;
 
-    ngx_hash_t                 hash;
-    ngx_hash_wildcard_t       *wc_head;
-    ngx_hash_wildcard_t       *wc_tail;
+    ngx_hash_t                 hash;//ip:port对应的server{}下server_name:ngx_http_core_srv_conf_t**哈希表
+    ngx_hash_wildcard_t       *wc_head;//ip:port对应的server{}下server_nam(前置通配符）e:ngx_http_core_srv_conf_t**哈希表
+    ngx_hash_wildcard_t       *wc_tail;//ip:port对应的server{}下server_name（后置通配符）:ngx_http_core_srv_conf_t**哈希表
 
 #if (NGX_PCRE)
     ngx_uint_t                 nregex;

@@ -284,7 +284,7 @@ failed:
 
 #endif
 
-/* epoll模块初始化 */
+/* epoll模块初始化函数 */
 static ngx_int_t
 ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
 {
@@ -320,9 +320,9 @@ ngx_epoll_init(ngx_cycle_t *cycle, ngx_msec_t timer)
         }
     }
 
-    nevents = epcf->events;
+    nevents = epcf->events;//重置一次性检索事件的个数
 
-    ngx_io = ngx_os_io;
+    ngx_io = ngx_os_io;//设置io函数
 
     ngx_event_actions = ngx_epoll_module_ctx.actions;//设置事件函数集
 
@@ -404,7 +404,7 @@ ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
 #endif
     }
 
-    if (e->active) {
+    if (e->active) {//如果事件为活跃，说明已在epoll里设置过事件监听，只要增加当前的事件类型即可
         op = EPOLL_CTL_MOD;
         events |= prev;
 

@@ -867,7 +867,7 @@ ngx_http_core_run_phases(ngx_http_request_t *r)
     }
 }
 
-
+/*  */
 ngx_int_t
 ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 {
@@ -881,25 +881,28 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "generic phase: %ui", r->phase_handler);
 
-    rc = ph->handler(r);
+    rc = ph->handler(r);/* 调用这一阶段http模块添加的handler处理方法 */
 
+	/* 返回NGX_OK则进入下一阶段处理，即使本阶段还有其他处理函数 */
     if (rc == NGX_OK) {
         r->phase_handler = ph->next;
         return NGX_AGAIN;
     }
 
+	/* 返回NGX_DECLINED,转到下一个处理函数 */
     if (rc == NGX_DECLINED) {
         r->phase_handler++;
         return NGX_AGAIN;
     }
 
+	/* 请求继续停留在这一个处理阶段中 */
     if (rc == NGX_AGAIN || rc == NGX_DONE) {
         return NGX_OK;
     }
 
     /* rc == NGX_ERROR || rc == NGX_HTTP_...  */
 
-    ngx_http_finalize_request(r, rc);
+    ngx_http_finalize_request(r, rc);/*错误处理，结束请求*/
 
     return NGX_OK;
 }
@@ -3846,6 +3849,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/* server{}配置项下server_name的解析 */
 static char *
 ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -3862,7 +3866,7 @@ ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         ch = value[i].data[0];
 
-        if ((ch == '*' && (value[i].len < 3 || value[i].data[1] != '.'))
+        if ((ch == '*' && (value[i].len < 3 || value[i].data[1] != '.'))//前置通配符错误检测
             || (ch == '.' && value[i].len < 2))
         {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
@@ -3870,7 +3874,7 @@ ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        if (ngx_strchr(value[i].data, '/')) {
+        if (ngx_strchr(value[i].data, '/')) {//不可有'/'字符
             ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                                "server name \"%V\" has suspicious symbols",
                                &value[i]);
@@ -3884,7 +3888,7 @@ ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 #if (NGX_PCRE)
         sn->regex = NULL;
 #endif
-        sn->server = cscf;
+        sn->server = cscf;//server_name对应的server级别配置信息
 
         if (ngx_strcasecmp(value[i].data, (u_char *) "$hostname") == 0) {
             sn->name = cf->cycle->hostname;

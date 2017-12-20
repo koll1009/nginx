@@ -43,8 +43,8 @@ struct ngx_cycle_s {
     ngx_log_t                 new_log;
 
     ngx_connection_t        **files;
-    ngx_connection_t         *free_connections;
-    ngx_uint_t                free_connection_n;
+    ngx_connection_t         *free_connections;//空闲连接链表
+    ngx_uint_t                free_connection_n;//空闲连接树
 
     ngx_queue_t               reusable_connections_queue;
 

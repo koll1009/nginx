@@ -301,11 +301,11 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (ngx_http_init_headers_in_hash(cf, cmcf) != NGX_OK) {
+    if (ngx_http_init_headers_in_hash(cf, cmcf) != NGX_OK) {//初始化http header
         return NGX_CONF_ERROR;
     }
 
-
+	/* 依次调用各http模块的postconfiguration函数 */
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -410,7 +410,7 @@ ngx_http_init_phases(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 }
 
 
-/* http header初始化，预设了所有http的head key */
+/* http header初始化成哈希表，预设了所有http的head key */
 static ngx_int_t
 ngx_http_init_headers_in_hash(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 {
@@ -425,6 +425,7 @@ ngx_http_init_headers_in_hash(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         return NGX_ERROR;
     }
 
+	
     for (header = ngx_http_headers_in; header->name.len; header++) {
         hk = ngx_array_push(&headers_in);
         if (hk == NULL) {
@@ -452,6 +453,7 @@ ngx_http_init_headers_in_hash(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 }
 
 
+/* 每个http phase处理函数初始化 */
 static ngx_int_t
 ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 {
@@ -475,7 +477,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     }
 
     ph = ngx_pcalloc(cf->pool,
-                     n * sizeof(ngx_http_phase_handler_t) + sizeof(void *));
+                     n * sizeof(ngx_http_phase_handler_t) + sizeof(void *));//预分配n各阶段处理描述符
     if (ph == NULL) {
         return NGX_ERROR;
     }
@@ -483,8 +485,9 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     cmcf->phase_engine.handlers = ph;
     n = 0;
 
+	/* 依次设置各http模块请求处理函数， */
     for (i = 0; i < NGX_HTTP_LOG_PHASE; i++) {
-        h = cmcf->phases[i].handlers.elts;
+        h = cmcf->phases[i].handlers.elts;//各http模块的handler函数数组
 
         switch (i) {
 
@@ -555,7 +558,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         }
 
         n += cmcf->phases[i].handlers.nelts;
-
+		/* 依 */
         for (j = cmcf->phases[i].handlers.nelts - 1; j >=0; j--) {
             ph->checker = checker;
             ph->handler = h[j];
@@ -1416,6 +1419,7 @@ ngx_http_add_server(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 }
 
 
+/* 优化各server */
 static ngx_int_t
 ngx_http_optimize_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
     ngx_array_t *ports)
@@ -1429,10 +1433,10 @@ ngx_http_optimize_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
     }
 
     port = ports->elts;
-    for (p = 0; p < ports->nelts; p++) {
+    for (p = 0; p < ports->nelts; p++) {//依次遍历各端口号
 
         ngx_sort(port[p].addrs.elts, (size_t) port[p].addrs.nelts,
-                 sizeof(ngx_http_conf_addr_t), ngx_http_cmp_conf_addrs);
+                 sizeof(ngx_http_conf_addr_t), ngx_http_cmp_conf_addrs);//端口下的各地址排序
 
         /*
          * check whether all name-based servers have the same
@@ -1440,7 +1444,7 @@ ngx_http_optimize_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
          */
 
         addr = port[p].addrs.elts;
-        for (a = 0; a < port[p].addrs.nelts; a++) {
+        for (a = 0; a < port[p].addrs.nelts; a++) {//依次遍历该端口下各地址
 
             if (addr[a].servers.nelts > 1
 #if (NGX_PCRE)
@@ -1463,6 +1467,7 @@ ngx_http_optimize_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 }
 
 
+/*  */
 static ngx_int_t
 ngx_http_server_names(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
     ngx_http_conf_addr_t *addr)
@@ -1618,7 +1623,7 @@ failed:
     return NGX_ERROR;
 }
 
-
+/* http addr大小比较函数 */
 static ngx_int_t
 ngx_http_cmp_conf_addrs(const void *one, const void *two)
 {

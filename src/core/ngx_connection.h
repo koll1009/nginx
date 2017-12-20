@@ -45,7 +45,7 @@ struct ngx_listening_s {
     ngx_msec_t          post_accept_timeout;
 
     ngx_listening_t    *previous;
-    ngx_connection_t   *connection;
+    ngx_connection_t   *connection;//监听对应的连接
 
     unsigned            open:1;
     unsigned            remain:1;
@@ -106,7 +106,7 @@ typedef enum {
 
 /* 被动连接的结构体 */
 struct ngx_connection_s {
-    void               *data;//连接未使用是，该指针用作next指针；当连接使用时，意义由模块而定
+    void               *data;//连接未使用时，该指针用作next指针；当连接使用时，意义由模块而定
     ngx_event_t        *read;//读事件
     ngx_event_t        *write;//写事件
 

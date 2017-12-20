@@ -259,6 +259,7 @@ ngx_http_static_handler(ngx_http_request_t *r)
 }
 
 
+/* ngx_http_static_module的postconfiguration函数 */
 static ngx_int_t
 ngx_http_static_init(ngx_conf_t *cf)
 {
@@ -272,7 +273,7 @@ ngx_http_static_init(ngx_conf_t *cf)
         return NGX_ERROR;
     }
 
-    *h = ngx_http_static_handler;
+    *h = ngx_http_static_handler;/* 在NGX_HTTP_CONTENT_PHASE添加ngx_http_static_handler函数 */
 
     return NGX_OK;
 }

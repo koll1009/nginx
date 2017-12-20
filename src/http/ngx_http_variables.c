@@ -1938,7 +1938,7 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
     return NGX_OK;
 }
 
-
+/* 初始化http变量 */
 ngx_int_t
 ngx_http_variables_init_vars(ngx_conf_t *cf)
 {
@@ -1957,6 +1957,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
 
     for (i = 0; i < cmcf->variables.nelts; i++) {
 
+		/* 初始化个变量的get函数 */
         for (n = 0; n < cmcf->variables_keys->keys.nelts; n++) {
 
             av = key[n].value;

@@ -622,7 +622,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
         module = ngx_modules[m]->ctx;
 
-        if (module->actions.init(cycle, ngx_timer_resolution) != NGX_OK) {//初始化事件模块
+        if (module->actions.init(cycle, ngx_timer_resolution) != NGX_OK) {//调用事件模块的初始化函数
             /* fatal */
             exit(2);
         }
@@ -640,7 +640,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         sa.sa_handler = ngx_timer_signal_handler;
         sigemptyset(&sa.sa_mask);
 
-        if (sigaction(SIGALRM, &sa, NULL) == -1) {
+        if (sigaction(SIGALRM, &sa, NULL) == -1) {//设置SIGALRM信号处理函数
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                           "sigaction(SIGALRM) failed");
             return NGX_ERROR;
@@ -651,7 +651,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         itv.it_value.tv_sec = ngx_timer_resolution / 1000;
         itv.it_value.tv_usec = (ngx_timer_resolution % 1000 ) * 1000;
 
-        if (setitimer(ITIMER_REAL, &itv, NULL) == -1) {
+        if (setitimer(ITIMER_REAL, &itv, NULL) == -1) {//每隔ngx_timer_resolution时间发送一个SIGALRM信号
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                           "setitimer() failed");
         }
@@ -677,6 +677,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #endif
 
+	/* 根据每个进程设置的连接上线，预分配ngx_connection_t以及读写事件的内存 */
     cycle->connections =
         ngx_alloc(sizeof(ngx_connection_t) * cycle->connection_n, cycle->log);
     if (cycle->connections == NULL) {
@@ -821,7 +822,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #else
 
-        rev->handler = ngx_event_accept;
+        rev->handler = ngx_event_accept;//监听socket的读事件函数，即处理用来accept客户端连接
 
         if (ngx_use_accept_mutex) {
             continue;
