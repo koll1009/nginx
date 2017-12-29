@@ -146,7 +146,7 @@ ngx_event_expire_timers(void)
             }
 #endif
 
-            ev->timedout = 1;
+            ev->timedout = 1;//设置超时标记
 
             ev->handler(ev);
 

@@ -345,13 +345,14 @@ typedef ngx_int_t (*ngx_http_handler_pt)(ngx_http_request_t *r);
 typedef void (*ngx_http_event_handler_pt)(ngx_http_request_t *r);
 
 
+/* 请求结构体 */
 struct ngx_http_request_s {
     uint32_t                          signature;         /* "HTTP" */
 
-    ngx_connection_t                 *connection;
+    ngx_connection_t                 *connection;//请求对应的客户端连接
 
     void                            **ctx;
-    void                            **main_conf;
+    void                            **main_conf;//对应的http{}、server{}、location{}配置信息
     void                            **srv_conf;
     void                            **loc_conf;
 
@@ -367,7 +368,7 @@ struct ngx_http_request_s {
                                          /* of ngx_http_upstream_state_t */
 
     ngx_pool_t                       *pool;
-    ngx_buf_t                        *header_in;
+    ngx_buf_t                        *header_in;//http内容接收缓冲区，主要用于接收header
 
     ngx_http_headers_in_t             headers_in;
     ngx_http_headers_out_t            headers_out;
@@ -375,7 +376,7 @@ struct ngx_http_request_s {
     ngx_http_request_body_t          *request_body;
 
     time_t                            lingering_time;
-    time_t                            start_sec;
+    time_t                            start_sec;//接收到请求的时间
     ngx_msec_t                        start_msec;
 
     ngx_uint_t                        method;
@@ -544,7 +545,7 @@ struct ngx_http_request_s {
     u_char                           *uri_end;
     u_char                           *uri_ext;
     u_char                           *args_start;
-    u_char                           *request_start;
+    u_char                           *request_start;//请求开始地址
     u_char                           *request_end;
     u_char                           *method_end;
     u_char                           *schema_start;

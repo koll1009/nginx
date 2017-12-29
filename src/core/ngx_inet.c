@@ -508,7 +508,7 @@ ngx_parse_addr(ngx_pool_t *pool, ngx_addr_t *addr, u_char *text, size_t len)
     return NGX_OK;
 }
 
-
+/* 解析url */
 ngx_int_t
 ngx_parse_url(ngx_pool_t *pool, ngx_url_t *u)
 {
@@ -516,7 +516,7 @@ ngx_parse_url(ngx_pool_t *pool, ngx_url_t *u)
 
     p = u->url.data;
 
-    if (ngx_strncasecmp(p, (u_char *) "unix:", 5) == 0) {
+    if (ngx_strncasecmp(p, (u_char *) "unix:", 5) == 0) {//unix域
         return ngx_parse_unix_domain_url(pool, u);
     }
 
@@ -529,7 +529,7 @@ ngx_parse_url(ngx_pool_t *pool, ngx_url_t *u)
         return ngx_parse_inet6_url(pool, u);
     }
 
-    return ngx_parse_inet_url(pool, u);
+    return ngx_parse_inet_url(pool, u);//ip4地址解析
 }
 
 
@@ -611,6 +611,7 @@ ngx_parse_unix_domain_url(ngx_pool_t *pool, ngx_url_t *u)
 }
 
 
+/* ip4地址的url解析 */
 static ngx_int_t
 ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
 {
@@ -622,22 +623,22 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
 
     u->socklen = sizeof(struct sockaddr_in);
     sin = (struct sockaddr_in *) &u->sockaddr;
-    sin->sin_family = AF_INET;
+    sin->sin_family = AF_INET;//协议族
 
     u->family = AF_INET;
 
-    host = u->url.data;
+    host = u->url.data;//主机名首地址
 
     last = host + u->url.len;
 
-    port = ngx_strlchr(host, last, ':');
+    port = ngx_strlchr(host, last, ':');//':'符号后为端口号首地址
 
-    uri = ngx_strlchr(host, last, '/');
+    uri = ngx_strlchr(host, last, '/');//'/'符号后为path首地址
 
-    args = ngx_strlchr(host, last, '?');
+    args = ngx_strlchr(host, last, '?');//'？'符号后为querystring首地址
 
     if (args) {
-        if (uri == NULL) {
+        if (uri == NULL) {//path包含querystring，如果没有相对路径
             uri = args;
 
         } else if (args < uri) {

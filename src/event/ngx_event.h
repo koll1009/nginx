@@ -65,7 +65,7 @@ struct ngx_event_s {
     unsigned         eof:1;
     unsigned         error:1;
 
-    unsigned         timedout:1;
+    unsigned         timedout:1;//³¬Ê±±ê¼Ç
     unsigned         timer_set:1;
 
     unsigned         delayed:1;

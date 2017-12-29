@@ -35,6 +35,7 @@ static uint32_t  usual[] = {
 
 #if (NGX_HAVE_LITTLE_ENDIAN && NGX_HAVE_NONALIGNED)
 
+/* 小端法4个字符的字符串比较 */
 #define ngx_str3_cmp(m, c0, c1, c2, c3)                                       \
     *(uint32_t *) m == ((c3 << 24) | (c2 << 16) | (c1 << 8) | c0)
 
@@ -153,7 +154,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             state = sw_method;
             break;
 
-        case sw_method:
+        case sw_method://http method解析
             if (ch == ' ') {
                 r->method_end = p - 1;
                 m = r->request_start;
@@ -161,12 +162,12 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                 switch (p - m) {
 
                 case 3:
-                    if (ngx_str3_cmp(m, 'G', 'E', 'T', ' ')) {
+                    if (ngx_str3_cmp(m, 'G', 'E', 'T', ' ')) {//get方法
                         r->method = NGX_HTTP_GET;
                         break;
                     }
 
-                    if (ngx_str3_cmp(m, 'P', 'U', 'T', ' ')) {
+                    if (ngx_str3_cmp(m, 'P', 'U', 'T', ' ')) {//put方法
                         r->method = NGX_HTTP_PUT;
                         break;
                     }
@@ -271,7 +272,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             break;
 
         /* space* before URI */
-        case sw_spaces_before_uri:
+        case sw_spaces_before_uri://跳过http path前的space字符
 
             if (ch == '/') {
                 r->uri_start = p;
@@ -288,7 +289,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
 
             switch (ch) {
             case ' ':
-                break;
+                break;//跳过space
             default:
                 return NGX_HTTP_PARSE_INVALID_REQUEST;
             }

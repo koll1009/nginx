@@ -57,7 +57,7 @@ struct ngx_listening_s {
     unsigned            listen:1;//监听标志位
     unsigned            nonblocking:1;
     unsigned            shared:1;    /* shared between threads or processes */
-    unsigned            addr_ntop:1;
+    unsigned            addr_ntop:1;//监听地址为数字类型numberic to presentation
 
 #if (NGX_HAVE_INET6 && defined IPV6_V6ONLY)
     unsigned            ipv6only:2;

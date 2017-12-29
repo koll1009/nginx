@@ -55,6 +55,7 @@ ngx_event_del_timer(ngx_event_t *ev)
 }
 
 
+/* 添加定时器事件 */
 static ngx_inline void
 ngx_event_add_timer(ngx_event_t *ev, ngx_msec_t timer)
 {
@@ -63,7 +64,7 @@ ngx_event_add_timer(ngx_event_t *ev, ngx_msec_t timer)
 
     key = ngx_current_msec + timer;
 
-    if (ev->timer_set) {
+    if (ev->timer_set) {//如果该定时器事件已经存在，且时间差在300ms之内，则跳过
 
         /*
          * Use a previous timer value if difference between it and a new

@@ -9,6 +9,7 @@
 #include <ngx_core.h>
 
 
+/* 创建临时ngx_buf_t,缓冲区大小为@size */
 ngx_buf_t *
 ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
 {

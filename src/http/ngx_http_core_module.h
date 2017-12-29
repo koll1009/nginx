@@ -193,7 +193,7 @@ typedef struct {
     ngx_flag_t                  merge_slashes;
     ngx_flag_t                  underscores_in_headers;
 
-    unsigned                    listen:1;
+    unsigned                    listen:1;//是否有listen配置信息标志
 #if (NGX_PCRE)
     unsigned                    captures:1;
 #endif
@@ -217,9 +217,10 @@ typedef struct {
 } ngx_http_addr_conf_t;
 
 
+
 typedef struct {
-    in_addr_t                  addr;
-    ngx_http_addr_conf_t       conf;
+    in_addr_t                  addr;//ip地址，numberic类型
+    ngx_http_addr_conf_t       conf;//改server地址对应的配置信息
 } ngx_http_in_addr_t;
 
 
