@@ -357,6 +357,7 @@ failed:
 static ngx_int_t
 ngx_http_init_phases(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 {
+	/* 依次初始化11个阶段的处理函数数组 */
     if (ngx_array_init(&cmcf->phases[NGX_HTTP_POST_READ_PHASE].handlers,
                        cf->pool, 1, sizeof(ngx_http_handler_pt))
         != NGX_OK)
@@ -499,8 +500,8 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
             break;
 
-        case NGX_HTTP_FIND_CONFIG_PHASE:
-            find_config_index = n;
+        case NGX_HTTP_FIND_CONFIG_PHASE://无handler函数，所以该索引下array为空
+            find_config_index = n;//指定find config phase的索引
 
             ph->checker = ngx_http_core_find_config_phase;
             n++;
@@ -558,7 +559,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         }
 
         n += cmcf->phases[i].handlers.nelts;
-		/* 依 */
+		
         for (j = cmcf->phases[i].handlers.nelts - 1; j >=0; j--) {
             ph->checker = checker;
             ph->handler = h[j];
@@ -679,7 +680,7 @@ ngx_http_merge_locations(ngx_conf_t *cf, ngx_queue_t *locations,
 }
 
 
-/* 初始化 */
+/* location初始化 */
 static ngx_int_t
 ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_http_core_loc_conf_t *pclcf)
@@ -1158,6 +1159,7 @@ inclusive:
 }
 
 
+//
 ngx_int_t
 ngx_http_add_listen(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_http_listen_opt_t *lsopt)
@@ -1452,7 +1454,7 @@ ngx_http_optimize_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 #endif
                )
             {
-                if (ngx_http_server_names(cf, cmcf, &addr[a]) != NGX_OK) {
+                if (ngx_http_server_names(cf, cmcf, &addr[a]) != NGX_OK) {//建立服务名的哈希表
                     return NGX_ERROR;
                 }
             }
@@ -1623,7 +1625,7 @@ failed:
     return NGX_ERROR;
 }
 
-/* http addr大小比较函数 */
+/* http addr大小比较函数，排序后，每个端口对应的地址排列顺序为 */
 static ngx_int_t
 ngx_http_cmp_conf_addrs(const void *one, const void *two)
 {
@@ -1632,12 +1634,12 @@ ngx_http_cmp_conf_addrs(const void *one, const void *two)
     first = (ngx_http_conf_addr_t *) one;
     second = (ngx_http_conf_addr_t *) two;
 
-    if (first->opt.wildcard) {
+    if (first->opt.wildcard) {//有通配符的监听地址放到最后面
         /* a wildcard address must be the last resort, shift it to the end */
         return 1;
     }
 
-    if (first->opt.bind && !second->opt.bind) {
+    if (first->opt.bind && !second->opt.bind) {//显示绑定的放到前面
         /* shift explicit bind()ed addresses to the start */
         return -1;
     }
@@ -1665,6 +1667,7 @@ ngx_http_cmp_dns_wildcards(const void *one, const void *two)
 }
 
 
+/* 初始化监听描述符 */
 static ngx_int_t
 ngx_http_init_listening(ngx_conf_t *cf, ngx_http_conf_port_t *port)
 {
@@ -1673,8 +1676,8 @@ ngx_http_init_listening(ngx_conf_t *cf, ngx_http_conf_port_t *port)
     ngx_http_port_t           *hport;
     ngx_http_conf_addr_t      *addr;
 
-    addr = port->addrs.elts;
-    last = port->addrs.nelts;
+    addr = port->addrs.elts;//该端口下的ip数组
+    last = port->addrs.nelts;//该端口下的ip数组大小
 
     /*
      * If there is a binding to an "*:port" then we need to bind() to
@@ -1683,7 +1686,7 @@ ngx_http_init_listening(ngx_conf_t *cf, ngx_http_conf_port_t *port)
      * implicit bindings go, and wildcard binding is in the end.
      */
 
-    if (addr[last - 1].opt.wildcard) {
+    if (addr[last - 1].opt.wildcard) {//如果有通配类型，则把所有未明确bind的地址和通配
         addr[last - 1].opt.bind = 1;
         bind_wildcard = 1;
 
@@ -1705,12 +1708,12 @@ ngx_http_init_listening(ngx_conf_t *cf, ngx_http_conf_port_t *port)
             return NGX_ERROR;
         }
 
-        hport = ngx_pcalloc(cf->pool, sizeof(ngx_http_port_t));
+        hport = ngx_pcalloc(cf->pool, sizeof(ngx_http_port_t));//创建一个ngx_http_port_t
         if (hport == NULL) {
             return NGX_ERROR;
         }
 
-        ls->servers = hport;
+        ls->servers = hport;//hport包含该监听描述符对应的地址 端口以及servername
 
         if (i == last - 1) {
             hport->naddrs = last;
@@ -1743,7 +1746,7 @@ ngx_http_init_listening(ngx_conf_t *cf, ngx_http_conf_port_t *port)
     return NGX_OK;
 }
 
-
+/* 添加监听 */
 static ngx_listening_t *
 ngx_http_add_listening(ngx_conf_t *cf, ngx_http_conf_addr_t *addr)
 {
@@ -1751,14 +1754,14 @@ ngx_http_add_listening(ngx_conf_t *cf, ngx_http_conf_addr_t *addr)
     ngx_http_core_loc_conf_t  *clcf;
     ngx_http_core_srv_conf_t  *cscf;
 
-    ls = ngx_create_listening(cf, &addr->opt.u.sockaddr, addr->opt.socklen);
+    ls = ngx_create_listening(cf, &addr->opt.u.sockaddr, addr->opt.socklen);//创建监听对象
     if (ls == NULL) {
         return NULL;
     }
 
     ls->addr_ntop = 1;
 
-    ls->handler = ngx_http_init_connection;
+    ls->handler = ngx_http_init_connection;//
 
     cscf = addr->default_server;
     ls->pool_size = cscf->connection_pool_size;

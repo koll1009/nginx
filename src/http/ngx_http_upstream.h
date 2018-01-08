@@ -111,20 +111,23 @@ struct ngx_http_upstream_srv_conf_s {
     ngx_array_t                     *servers;  /* ngx_http_upstream_server_t */
 
     ngx_uint_t                       flags;
-    ngx_str_t                        host;
+    ngx_str_t                        host;//upstream对应的服务器名
     u_char                          *file_name;
     ngx_uint_t                       line;
-    in_port_t                        port;
+    in_port_t                        port;//upstream对应的端口号
     in_port_t                        default_port;
 };
 
 
+/* upstream模块处理请求时的参数 */
 typedef struct {
+
+	/* 当在ngx_http_upstream_t结构体中没有实现resolved成员时，upstream这个结构体才会生效，它会定义上游服务器的配置 */
     ngx_http_upstream_srv_conf_t    *upstream;
 
-    ngx_msec_t                       connect_timeout;
-    ngx_msec_t                       send_timeout;
-    ngx_msec_t                       read_timeout;
+    ngx_msec_t                       connect_timeout;//连接上游服务器的超时时间，单位为ms
+    ngx_msec_t                       send_timeout;//发送tcp包到上游服务器的超时时间
+    ngx_msec_t                       read_timeout;//接收tcp包到上游服务器的超时时间
     ngx_msec_t                       timeout;
 
     size_t                           send_lowat;
@@ -143,7 +146,7 @@ typedef struct {
     ngx_uint_t                       ignore_headers;
     ngx_uint_t                       next_upstream;
     ngx_uint_t                       store_access;
-    ngx_flag_t                       buffering;
+    ngx_flag_t                       buffering;/* 标志位，为1时，将启用更大的内存和磁盘文件缓存上游的响应包体，意味着上游网速更快；为0时，使用固定大小缓冲区转发响应包体 */
     ngx_flag_t                       pass_request_headers;
     ngx_flag_t                       pass_request_body;
 
@@ -237,10 +240,10 @@ typedef struct {
     in_port_t                        port;
     ngx_uint_t                       no_port; /* unsigned no_port:1 */
 
-    ngx_uint_t                       naddrs;
+    ngx_uint_t                       naddrs;//地址个数
     in_addr_t                       *addrs;
 
-    struct sockaddr                 *sockaddr;
+    struct sockaddr                 *sockaddr;//上游服务器地址
     socklen_t                        socklen;
 
     ngx_resolver_ctx_t              *ctx;
@@ -252,25 +255,30 @@ typedef void (*ngx_http_upstream_handler_pt)(ngx_http_request_t *r,
 
 
 struct ngx_http_upstream_s {
-    ngx_http_upstream_handler_pt     read_event_handler;
+    ngx_http_upstream_handler_pt     read_event_handler;//读事件的回调函数
     ngx_http_upstream_handler_pt     write_event_handler;
 
-    ngx_peer_connection_t            peer;
+    ngx_peer_connection_t            peer;//上游服务器的连接
 
+	/* 当向下游客户端转发响应时（ngx_http_request_t结构体中的subrequest_in_memory标志位为0），
+	 * 如果打开了缓存且认为上游网速更快（conf配置中的buffering标志位为1），这时会使用pipe成
+	 * 员来转发响应。在使用这种方式转发响应时，必须由HTTP模块在使用upstream机制前构造pipe结构
+	 * 体，否则会出现严重的coredump错误。
+	 */
     ngx_event_pipe_t                *pipe;
 
-    ngx_chain_t                     *request_bufs;
+    ngx_chain_t                     *request_bufs;//发送的上游服务器的请求
 
     ngx_output_chain_ctx_t           output;
     ngx_chain_writer_ctx_t           writer;
 
-    ngx_http_upstream_conf_t        *conf;
+    ngx_http_upstream_conf_t        *conf;//使用upstream机制时的配置参数
 
     ngx_http_upstream_headers_in_t   headers_in;
 
     ngx_http_upstream_resolved_t    *resolved;
 
-    ngx_buf_t                        buffer;
+    ngx_buf_t                        buffer;//接收上游服务器的响应
     size_t                           length;
 
     ngx_chain_t                     *out_bufs;

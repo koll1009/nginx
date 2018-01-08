@@ -40,9 +40,9 @@ typedef struct {
     ngx_str_t                      uri;
 } ngx_http_proxy_vars_t;
 
-
+/*  ngx_http_proxy_module创建location{}级别配置信息上下文描述符 */
 typedef struct {
-    ngx_http_upstream_conf_t       upstream;
+    ngx_http_upstream_conf_t       upstream;//upstream配置信息
 
     ngx_array_t                   *flushes;
     ngx_array_t                   *body_set_len;
@@ -1631,6 +1631,7 @@ ngx_http_proxy_add_variables(ngx_conf_t *cf)
 }
 
 
+/* ngx_http_proxy_module创建location{}级别配置信息上下文函数 */
 static void *
 ngx_http_proxy_create_loc_conf(ngx_conf_t *cf)
 {
@@ -2386,7 +2387,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     url = &value[1];
 
-    n = ngx_http_script_variables_count(url);
+    n = ngx_http_script_variables_count(url);//URL中变量个数
 
     if (n) {
 

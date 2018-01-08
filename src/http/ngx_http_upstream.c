@@ -371,6 +371,7 @@ ngx_conf_bitmask_t  ngx_http_upstream_ignore_headers_masks[] = {
 };
 
 
+/* 创建ngx_http_upstream_t结构体 */
 ngx_int_t
 ngx_http_upstream_create(ngx_http_request_t *r)
 {
@@ -404,6 +405,7 @@ ngx_http_upstream_create(ngx_http_request_t *r)
 }
 
 
+/* 启动ustream */
 void
 ngx_http_upstream_init(ngx_http_request_t *r)
 {
@@ -414,11 +416,11 @@ ngx_http_upstream_init(ngx_http_request_t *r)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http init upstream, client timer: %d", c->read->timer_set);
 
-    if (c->read->timer_set) {
+    if (c->read->timer_set) {//此时会发起上游的连接，无需等待网卡数据的到来，所以需要把定时器事件删除
         ngx_del_timer(c->read);
     }
 
-    if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {
+    if (ngx_event_flags & NGX_USE_CLEAR_EVENT) {//把写事件加入epoll
 
         if (!c->write->active) {
             if (ngx_add_event(c->write, NGX_WRITE_EVENT, NGX_CLEAR_EVENT)
@@ -430,7 +432,7 @@ ngx_http_upstream_init(ngx_http_request_t *r)
         }
     }
 
-    ngx_http_upstream_init_request(r);
+    ngx_http_upstream_init_request(r);//初始化上游服务器的请求
 }
 
 
@@ -1071,6 +1073,7 @@ ngx_http_upstream_check_broken_connection(ngx_http_request_t *r,
 }
 
 
+/* 连接upstream上游服务器 */
 static void
 ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
 {
@@ -4285,7 +4288,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
         return uscfp[i];
     }
 
-    uscf = ngx_pcalloc(cf->pool, sizeof(ngx_http_upstream_srv_conf_t));
+    uscf = ngx_pcalloc(cf->pool, sizeof(ngx_http_upstream_srv_conf_t));//新建一个upstream server级别配置项
     if (uscf == NULL) {
         return NULL;
     }
@@ -4473,6 +4476,7 @@ ngx_http_upstream_hide_headers_hash(ngx_conf_t *cf,
 }
 
 
+/* ngx_http_upstream_module http{}级别的配置信息创建函数 */
 static void *
 ngx_http_upstream_create_main_conf(ngx_conf_t *cf)
 {
@@ -4482,7 +4486,7 @@ ngx_http_upstream_create_main_conf(ngx_conf_t *cf)
     if (umcf == NULL) {
         return NULL;
     }
-
+	
     if (ngx_array_init(&umcf->upstreams, cf->pool, 4,
                        sizeof(ngx_http_upstream_srv_conf_t *))
         != NGX_OK)

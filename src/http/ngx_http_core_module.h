@@ -105,7 +105,7 @@ typedef enum {
     NGX_HTTP_FIND_CONFIG_PHASE, //请求的uri匹配，只能由ngx_http_core_module实现
     NGX_HTTP_REWRITE_PHASE,//找到匹配的location后再修改请求的uri
 
-    NGX_HTTP_POST_REWRITE_PHASE,//
+    NGX_HTTP_POST_REWRITE_PHASE,//这一阶段用于rewrite url后，防止错误的配置导致循环修改uri导致的死循环
 
     NGX_HTTP_PREACCESS_PHASE,//在处理NGX_HTTP_ACCESS_PHASE阶段决定请求的访问权限前，http模块可以介入的阶段
 
@@ -130,7 +130,7 @@ struct ngx_http_phase_handler_s {
     ngx_uint_t                 next;//下一个处理阶段的索引
 };
 
-
+/* http阶段处理引擎描述符 */
 typedef struct {
     ngx_http_phase_handler_t  *handlers;//一个请求可能经历的所有处理的方法数组
     ngx_uint_t                 server_rewrite_index;//NGX_HTTP_SERVER_REWRITE_PHASE阶段第一个处理方法的索引
@@ -147,7 +147,10 @@ typedef struct {
 typedef struct {
     ngx_array_t                servers;         /* ngx_http_core_srv_conf_t，每个server{}配置项都要在该数组里保存 */
 
-    ngx_http_phase_engine_t    phase_engine;//请求的阶段处理引擎
+	/* 请求的阶段处理引擎，里面有所有的要执行的ngx_http_phase_handler_t数组，其中ngx_http_phase_handler_t结构的handler函数在模块初始化时
+	 * 添加到了phases数组中
+	 */
+    ngx_http_phase_engine_t    phase_engine;
 
     ngx_hash_t                 headers_in_hash;//http head key哈希表
 
@@ -174,7 +177,7 @@ typedef struct {
 
 typedef struct {
     /* array of the ngx_http_server_name_t, "server_name" directive */
-    ngx_array_t                 server_names;
+    ngx_array_t                 server_names;/* 一个server{}可以配置多个名字 */
 
     /* server ctx */
     ngx_http_conf_ctx_t        *ctx;//指向server模块解析对应的
@@ -209,7 +212,7 @@ typedef struct {
     /* the default server configuration for this address:port */
     ngx_http_core_srv_conf_t  *default_server;
 
-    ngx_http_virtual_names_t  *virtual_names;
+    ngx_http_virtual_names_t  *virtual_names;/* ip:port对应的所有server_name */
 
 #if (NGX_HTTP_SSL)
     ngx_uint_t                 ssl;   /* unsigned  ssl:1; */
@@ -237,7 +240,7 @@ typedef struct {
 typedef struct {
     /* ngx_http_in_addr_t or ngx_http_in6_addr_t */
     void                      *addrs;
-    ngx_uint_t                 naddrs;
+    ngx_uint_t                 naddrs;//addrs数组大小
 } ngx_http_port_t;
 
 
@@ -266,6 +269,7 @@ typedef struct {
 } ngx_http_conf_addr_t;
 
 
+/* server_name描述符 */
 struct ngx_http_server_name_s {
 #if (NGX_PCRE)
     ngx_http_regex_t          *regex;

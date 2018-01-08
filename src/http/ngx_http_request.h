@@ -165,7 +165,7 @@ typedef struct {
     ngx_uint_t                        offset;
 } ngx_http_header_out_t;
 
-
+//http request header描述符
 typedef struct {
     ngx_list_t                        headers;
 
@@ -283,8 +283,8 @@ typedef struct {
 typedef struct {
     ngx_http_request_t               *request;
 
-    ngx_buf_t                       **busy;
-    ngx_int_t                         nbusy;
+    ngx_buf_t                       **busy;//保存接收请求的缓存
+    ngx_int_t                         nbusy;//用的缓存数目
 
     ngx_buf_t                       **free;
     ngx_int_t                         nfree;
@@ -295,7 +295,7 @@ typedef struct {
 
 typedef struct ngx_http_server_name_s  ngx_http_server_name_t;
 
-
+/* ip:port对应的server_name */
 typedef struct {
      ngx_hash_combined_t              names;
 
@@ -335,6 +335,7 @@ struct ngx_http_postponed_request_s {
 
 typedef struct ngx_http_posted_request_s  ngx_http_posted_request_t;
 
+/* post请求链表 */
 struct ngx_http_posted_request_s {
     ngx_http_request_t               *request;
     ngx_http_posted_request_t        *next;
@@ -370,7 +371,7 @@ struct ngx_http_request_s {
     ngx_pool_t                       *pool;
     ngx_buf_t                        *header_in;//http内容接收缓冲区，主要用于接收header
 
-    ngx_http_headers_in_t             headers_in;
+    ngx_http_headers_in_t             headers_in;//http request header描述符
     ngx_http_headers_out_t            headers_out;
 
     ngx_http_request_body_t          *request_body;
@@ -382,26 +383,27 @@ struct ngx_http_request_s {
     ngx_uint_t                        method;
     ngx_uint_t                        http_version;
 
-    ngx_str_t                         request_line;
+    ngx_str_t                         request_line;//请求行
     ngx_str_t                         uri;
     ngx_str_t                         args;
     ngx_str_t                         exten;
     ngx_str_t                         unparsed_uri;
 
-    ngx_str_t                         method_name;
+    ngx_str_t                         method_name;//http method类型
     ngx_str_t                         http_protocol;
 
     ngx_chain_t                      *out;
-    ngx_http_request_t               *main;
-    ngx_http_request_t               *parent;
+    ngx_http_request_t               *main;//原始请求
+    ngx_http_request_t               *parent;//父请求
     ngx_http_postponed_request_t     *postponed;
     ngx_http_post_subrequest_t       *post_subrequest;
-    ngx_http_posted_request_t        *posted_requests;
+    ngx_http_posted_request_t        *posted_requests;//子请求链表
 
     ngx_http_virtual_names_t         *virtual_names;
 
+	/* ngx_http_phase_engine_t结构体中ngx_http_phase_handler_t数组的执行索引 */
     ngx_int_t                         phase_handler;
-    ngx_http_handler_pt               content_handler;
+    ngx_http_handler_pt               content_handler;//在NGX_HTTP_FIND_CONFIG_PHASE阶段，把该值指向相匹配location下的handler
     ngx_uint_t                        access_code;
 
     ngx_http_variable_value_t        *variables;
@@ -462,6 +464,10 @@ struct ngx_http_request_s {
     unsigned                          request_body_file_group_access:1;
     unsigned                          request_body_file_log_level:3;
 
+	/* 标志位
+	 * 为1时，不转发响应包体到下游，由http模块实现的input_filter方法处理
+	 * 为0时，转发响应包体 
+	 */
     unsigned                          subrequest_in_memory:1;
     unsigned                          waited:1;
 
@@ -498,7 +504,7 @@ struct ngx_http_request_s {
     unsigned                          keepalive:1;
     unsigned                          lingering_close:1;
     unsigned                          discard_body:1;
-    unsigned                          internal:1;
+    unsigned                          internal:1;//标志位，为1时做内部跳转
     unsigned                          error_page:1;
     unsigned                          ignore_content_encoding:1;
     unsigned                          filter_finalize:1;
@@ -525,7 +531,7 @@ struct ngx_http_request_s {
 
     /* used to parse HTTP headers */
 
-    ngx_uint_t                        state;
+    ngx_uint_t                        state;//请求的状态
 
     ngx_uint_t                        header_hash;
     ngx_uint_t                        lowcase_index;

@@ -143,7 +143,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
         case sw_start:
             r->request_start = p;
 
-            if (ch == CR || ch == LF) {
+            if (ch == CR || ch == LF) {//跳过/r/n
                 break;
             }
 
@@ -752,6 +752,7 @@ done:
 }
 
 
+/* 解析http header */
 ngx_int_t
 ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
     ngx_uint_t allow_underscores)
@@ -816,7 +817,7 @@ ngx_http_parse_header_line(ngx_http_request_t *r, ngx_buf_t *b,
                 }
 
                 if (ch == '\0') {
-                    return NGX_HTTP_PARSE_INVALID_HEADER;
+                    return NGX_HTTP_PARSE_INVALID_HEADER;//非法字符
                 }
 
                 r->invalid_header = 1;

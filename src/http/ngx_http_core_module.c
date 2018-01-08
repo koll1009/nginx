@@ -845,7 +845,7 @@ ngx_http_handler(ngx_http_request_t *r)
     ngx_http_core_run_phases(r);
 }
 
-
+/* 执行各http phase的函数 */
 void
 ngx_http_core_run_phases(ngx_http_request_t *r)
 {
@@ -867,7 +867,7 @@ ngx_http_core_run_phases(ngx_http_request_t *r)
     }
 }
 
-/*  */
+/* NGX_HTTP_POST_READ_PHASE、NGX_HTTP_PREACCESS_PHASE、NGX_HTTP_LOG_PHASE阶段通用的checker函数 */
 ngx_int_t
 ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 {
@@ -907,7 +907,7 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     return NGX_OK;
 }
 
-
+/* NGX_HTTP_SERVER_REWRITE_PHASE NGX_HTTP_REWRITE_PHASE阶段的checker方法 */
 ngx_int_t
 ngx_http_core_rewrite_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 {
@@ -916,9 +916,9 @@ ngx_http_core_rewrite_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "rewrite phase: %ui", r->phase_handler);
 
-    rc = ph->handler(r);
+    rc = ph->handler(r);//调用模块实现的handler函数
 
-    if (rc == NGX_DECLINED) {
+    if (rc == NGX_DECLINED) {//执行下一个回调函数，因为phase_handler++,所以
         r->phase_handler++;
         return NGX_AGAIN;
     }
@@ -935,6 +935,7 @@ ngx_http_core_rewrite_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 }
 
 
+/* ngx_http_find_config_phase阶段的checker函数 */
 ngx_int_t
 ngx_http_core_find_config_phase(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph)
@@ -1073,13 +1074,14 @@ ngx_http_core_post_rewrite_phase(ngx_http_request_t *r,
 }
 
 
+/* ngx_http_access_phase阶段的checker函数 */
 ngx_int_t
 ngx_http_core_access_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 {
     ngx_int_t                  rc;
     ngx_http_core_loc_conf_t  *clcf;
 
-    if (r != r->main) {
+    if (r != r->main) {//子请求不需要验证
         r->phase_handler = ph->next;
         return NGX_AGAIN;
     }
@@ -1100,7 +1102,7 @@ ngx_http_core_access_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-    if (clcf->satisfy == NGX_HTTP_SATISFY_ALL) {
+    if (clcf->satisfy == NGX_HTTP_SATISFY_ALL) {//此配置项表示要进行所有验证模块的验证操作
 
         if (rc == NGX_OK) {
             r->phase_handler++;
@@ -1108,7 +1110,7 @@ ngx_http_core_access_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
         }
 
     } else {
-        if (rc == NGX_OK) {
+        if (rc == NGX_OK) {//只通过某一个模块的验证就可以跳过
             r->access_code = 0;
 
             if (r->headers_out.www_authenticate) {
@@ -1128,7 +1130,7 @@ ngx_http_core_access_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     }
 
     /* rc == NGX_ERROR || rc == NGX_HTTP_...  */
-
+	/* 有模块验证没通过 */
     ngx_http_finalize_request(r, rc);
     return NGX_OK;
 }
@@ -1357,6 +1359,7 @@ ngx_http_core_try_files_phase(ngx_http_request_t *r,
 }
 
 
+/* NGX_HTTP_CONTENT_PHASE阶段的check方法 */
 ngx_int_t
 ngx_http_core_content_phase(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph)
@@ -1607,7 +1610,7 @@ ngx_http_core_find_static_location(ngx_http_request_t *r,
 
         rc = ngx_filename_cmp(uri, node->name, n);
 
-        if (rc != 0) {
+        if (rc != 0) {//查找左右子树
             node = (rc < 0) ? node->left : node->right;
 
             continue;
@@ -3897,7 +3900,7 @@ ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             sn->name = value[i];
         }
 
-        if (value[i].data[0] != '~') {
+        if (value[i].data[0] != '~') {//正则表达式以~开头
             ngx_strlow(sn->name.data, sn->name.data, sn->name.len);
             continue;
         }

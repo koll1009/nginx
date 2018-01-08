@@ -735,7 +735,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
         if (rc == NGX_AGAIN) {
             n = ngx_http_read_request_header(r);//读取http请求数据
 
-            if (n == NGX_AGAIN || n == NGX_ERROR) {
+            if (n == NGX_AGAIN || n == NGX_ERROR) {//返回ngx_again表示
                 return;
             }
         }
@@ -746,10 +746,10 @@ ngx_http_process_request_line(ngx_event_t *rev)
 
             /* the request line has been parsed successfully */
 
-            r->request_line.len = r->request_end - r->request_start;
+            r->request_line.len = r->request_end - r->request_start;//设置请求行字符串
             r->request_line.data = r->request_start;
 
-
+			//设置请求path字符串
             if (r->args_start) {
                 r->uri.len = r->args_start - 1 - r->uri_start;
             } else {
@@ -786,7 +786,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
 
             r->valid_unparsed_uri = r->space_in_uri ? 0 : 1;
 
-            r->method_name.len = r->method_end - r->request_start + 1;
+            r->method_name.len = r->method_end - r->request_start + 1;//设置method字符串
             r->method_name.data = r->request_line.data;
 
 
@@ -914,7 +914,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
             c->log->action = "reading client request headers";
 
             rev->handler = ngx_http_process_request_headers;
-            ngx_http_process_request_headers(rev);
+            ngx_http_process_request_headers(rev);//处理http header
 
             return;
         }
@@ -1030,7 +1030,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
                 }
             }
 
-            n = ngx_http_read_request_header(r);
+            n = ngx_http_read_request_header(r);//读http header的数据
 
             if (n == NGX_AGAIN || n == NGX_ERROR) {
                 return;
@@ -1038,7 +1038,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
         }
 
         rc = ngx_http_parse_header_line(r, r->header_in,
-                                        cscf->underscores_in_headers);
+                                        cscf->underscores_in_headers);//解析http header
 
         if (rc == NGX_OK) {
 
@@ -1109,7 +1109,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
 
             r->http_state = NGX_HTTP_PROCESS_REQUEST_STATE;
 
-            rc = ngx_http_process_request_header(r);
+            rc = ngx_http_process_request_header(r);//某些header检查
 
             if (rc != NGX_OK) {
                 return;
@@ -1197,6 +1197,7 @@ ngx_http_read_request_header(ngx_http_request_t *r)
 }
 
 
+/* 分配更大的http请求行+header缓存 */
 static ngx_int_t
 ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
     ngx_uint_t request_line)
@@ -1209,14 +1210,14 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http alloc large header buffer");
 
-    if (request_line && r->state == 0) {
+    if (request_line && r->state == 0) {//说明缓存里全是/r/n字符
 
         /* the client fills up the buffer with "\r\n" */
 
         r->request_length += r->header_in->end - r->header_in->start;
 
         r->header_in->pos = r->header_in->start;
-        r->header_in->last = r->header_in->start;
+        r->header_in->last = r->header_in->start;//把/r/n字符作废，直接重复利用该缓存
 
         return NGX_OK;
     }
@@ -1225,6 +1226,7 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
 
     cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
 
+	/* 请求行+header的大小超过了设置的上限 */
     if (r->state != 0
         && (size_t) (r->header_in->pos - old)
                                      >= cscf->large_client_header_buffers.size)
@@ -1241,9 +1243,9 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
                        "http large header free: %p %uz",
                        b->pos, b->end - b->last);
 
-    } else if (hc->nbusy < cscf->large_client_header_buffers.num) {
+    } else if (hc->nbusy < cscf->large_client_header_buffers.num) {//
 
-        if (hc->busy == NULL) {
+        if (hc->busy == NULL) {//分配large_client_header_buffers个缓存指针
             hc->busy = ngx_palloc(r->connection->pool,
                   cscf->large_client_header_buffers.num * sizeof(ngx_buf_t *));
             if (hc->busy == NULL) {
@@ -1265,7 +1267,7 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
         return NGX_DECLINED;
     }
 
-    hc->busy[hc->nbusy++] = b;
+    hc->busy[hc->nbusy++] = b;//
 
     if (r->state == 0) {
         /*
@@ -1347,6 +1349,7 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
 }
 
 
+/*  */
 static ngx_int_t
 ngx_http_process_header_line(ngx_http_request_t *r, ngx_table_elt_t *h,
     ngx_uint_t offset)
@@ -1656,7 +1659,7 @@ ngx_http_process_request(ngx_http_request_t *r)
 
 #endif
 
-    if (c->read->timer_set) {
+    if (c->read->timer_set) {//删除定时器
         ngx_del_timer(c->read);
     }
 
@@ -1667,11 +1670,11 @@ ngx_http_process_request(ngx_http_request_t *r)
     r->stat_writing = 1;
 #endif
 
-    c->read->handler = ngx_http_request_handler;
+    c->read->handler = ngx_http_request_handler;//设置读写事件处理函数
     c->write->handler = ngx_http_request_handler;
     r->read_event_handler = ngx_http_block_reading;
 
-    ngx_http_handler(r);
+    ngx_http_handler(r);//执行http phase handler
 
     ngx_http_run_posted_requests(c);
 }
@@ -1801,6 +1804,7 @@ found:
 }
 
 
+/* 进入到http procress request阶段后的连接read事件的回调函数 */
 static void
 ngx_http_request_handler(ngx_event_t *ev)
 {
@@ -1821,7 +1825,7 @@ ngx_http_request_handler(ngx_event_t *ev)
         r->write_event_handler(r);
 
     } else {
-        r->read_event_handler(r);
+        r->read_event_handler(r);//执行请求的读回调函数
     }
 
     ngx_http_run_posted_requests(c);
@@ -1837,14 +1841,14 @@ ngx_http_run_posted_requests(ngx_connection_t *c)
 
     for ( ;; ) {
 
-        if (c->destroyed) {
+        if (c->destroyed) {//连接已销毁，则返回
             return;
         }
 
         r = c->data;
-        pr = r->main->posted_requests;
+        pr = r->main->posted_requests;//
 
-        if (pr == NULL) {
+        if (pr == NULL) {//无子请求，返回
             return;
         }
 

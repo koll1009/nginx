@@ -59,7 +59,7 @@ ngx_module_t *ngx_modules[] = {
     &ngx_http_core_module,
     &ngx_http_log_module,
     &ngx_http_upstream_module,
-    &ngx_http_static_module,
+    &ngx_http_static_module,//http ngx_content_phase
     &ngx_http_autoindex_module,
     &ngx_http_index_module,
     &ngx_http_auth_basic_module,
