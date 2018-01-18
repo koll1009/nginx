@@ -364,7 +364,7 @@ struct ngx_http_request_s {
     ngx_http_cache_t                 *cache;
 #endif
 
-    ngx_http_upstream_t              *upstream;
+    ngx_http_upstream_t              *upstream;//请求对应的上游服务器
     ngx_array_t                      *upstream_states;
                                          /* of ngx_http_upstream_state_t */
 

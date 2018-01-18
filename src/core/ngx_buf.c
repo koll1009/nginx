@@ -44,7 +44,7 @@ ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
     return b;
 }
 
-
+/* 分配一个ngx_chait_t */
 ngx_chain_t *
 ngx_alloc_chain_link(ngx_pool_t *pool)
 {
@@ -52,12 +52,12 @@ ngx_alloc_chain_link(ngx_pool_t *pool)
 
     cl = pool->chain;
 
-    if (cl) {
+    if (cl) {//复用free chain
         pool->chain = cl->next;
         return cl;
     }
 
-    cl = ngx_palloc(pool, sizeof(ngx_chain_t));
+    cl = ngx_palloc(pool, sizeof(ngx_chain_t));//新创建
     if (cl == NULL) {
         return NULL;
     }

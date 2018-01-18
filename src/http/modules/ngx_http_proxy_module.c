@@ -31,11 +31,11 @@ struct ngx_http_proxy_redirect_s {
     } replacement;
 };
 
-
+/* http代理变量结构体 */
 typedef struct {
-    ngx_str_t                      key_start;
-    ngx_str_t                      schema;
-    ngx_str_t                      host_header;
+    ngx_str_t                      key_start;//起始关键字字符串
+    ngx_str_t                      schema;//协议字符串，例如http:// or https://
+    ngx_str_t                      host_header;//主机字符串，包含端口号
     ngx_str_t                      port;
     ngx_str_t                      uri;
 } ngx_http_proxy_vars_t;
@@ -61,7 +61,7 @@ typedef struct {
     ngx_str_t                      body_source;
 
     ngx_str_t                      method;
-    ngx_str_t                      location;
+    ngx_str_t                      location;//代理对应的location{}地址
     ngx_str_t                      url;
 
 #if (NGX_HTTP_CACHE)
@@ -550,6 +550,7 @@ static ngx_path_init_t  ngx_http_proxy_temp_path = {
 };
 
 
+/* proxy代理的handle函数 */
 static ngx_int_t
 ngx_http_proxy_handler(ngx_http_request_t *r)
 {
@@ -588,7 +589,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
 
     u->output.tag = (ngx_buf_tag_t) &ngx_http_proxy_module;
 
-    u->conf = &plcf->upstream;
+    u->conf = &plcf->upstream;//设置配置信息
 
 #if (NGX_HTTP_CACHE)
     u->create_key = ngx_http_proxy_create_key;
@@ -832,6 +833,7 @@ ngx_http_proxy_create_key(ngx_http_request_t *r)
 #endif
 
 
+/* ngx_http_proxy_module_t模块创建上游请求的方法 */
 static ngx_int_t
 ngx_http_proxy_create_request(ngx_http_request_t *r)
 {
@@ -1637,7 +1639,7 @@ ngx_http_proxy_create_loc_conf(ngx_conf_t *cf)
 {
     ngx_http_proxy_loc_conf_t  *conf;
 
-    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_proxy_loc_conf_t));
+    conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_proxy_loc_conf_t));//创建配置信息描述符
     if (conf == NULL) {
         return NULL;
     }
@@ -2357,7 +2359,7 @@ ngx_http_proxy_merge_headers(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *conf,
     return ngx_hash_init(&hash, headers_names.elts, headers_names.nelts);
 }
 
-
+/* 解析proxy_pass配置信息 */
 static char *
 ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -2379,7 +2381,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     clcf->handler = ngx_http_proxy_handler;
 
-    if (clcf->name.data[clcf->name.len - 1] == '/') {
+    if (clcf->name.data[clcf->name.len - 1] == '/') {//如果location的name指向的是前置路径，则默认为自动重定向
         clcf->auto_redirect = 1;
     }
 
@@ -2446,7 +2448,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     u.uri_part = 1;
     u.no_resolve = 1;
 
-    plcf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);
+    plcf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);//添加一个upstream配置信息块
     if (plcf->upstream.upstream == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -2798,6 +2800,7 @@ ngx_http_proxy_set_ssl(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *plcf)
 #endif
 
 
+/* http代理变量设置，设置主机、端口号、请求的path */
 static void
 ngx_http_proxy_set_vars(ngx_url_t *u, ngx_http_proxy_vars_t *v)
 {

@@ -11,6 +11,7 @@
 #include <ngx_event_connect.h>
 
 
+/* 连接远端服务器 */
 ngx_int_t
 ngx_event_connect_peer(ngx_peer_connection_t *pc)
 {

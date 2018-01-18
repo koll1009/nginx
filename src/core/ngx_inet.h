@@ -66,37 +66,37 @@ typedef struct {
     } u;
 } ngx_cidr_t;
 
-
+//
 typedef struct {
-    struct sockaddr          *sockaddr;
-    socklen_t                 socklen;
-    ngx_str_t                 name;
+    struct sockaddr          *sockaddr;//sock addr
+    socklen_t                 socklen;//sock addr长度
+    ngx_str_t                 name;//sock addr对应的ip:port字符串
 } ngx_addr_t;
 
 
 typedef struct {
     ngx_str_t                 url;//url字符串
-    ngx_str_t                 host;
-    ngx_str_t                 port_text;
-    ngx_str_t                 uri;
+    ngx_str_t                 host;//ip（主机名）字符串
+    ngx_str_t                 port_text;//port字符串
+    ngx_str_t                 uri;//请求path字符串
 
-    in_port_t                 port;
+    in_port_t                 port;//端口号
     in_port_t                 default_port;
-    int                       family;
+    int                       family;//协议族
 
     unsigned                  listen:1;
     unsigned                  uri_part:1;
     unsigned                  no_resolve:1;
-    unsigned                  one_addr:1;
+    unsigned                  one_addr:1;//标志位，只取一个host对应的ip地址
 
     unsigned                  no_port:1;
     unsigned                  wildcard:1;
 
-    socklen_t                 socklen;
-    u_char                    sockaddr[NGX_SOCKADDRLEN];
+    socklen_t                 socklen;//sockaddr字段使用的长度
+    u_char                    sockaddr[NGX_SOCKADDRLEN];//用来存储socket地址
 
-    ngx_addr_t               *addrs;
-    ngx_uint_t                naddrs;
+    ngx_addr_t               *addrs;//url的host对应的ip地址数组
+    ngx_uint_t                naddrs;//上面addrs数组的大小
 
     char                     *err;
 } ngx_url_t;

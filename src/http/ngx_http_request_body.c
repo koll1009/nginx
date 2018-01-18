@@ -65,7 +65,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
     if (r->headers_in.content_length_n == 0) {
 
         if (r->request_body_in_file_only) {
-            tf = ngx_pcalloc(r->pool, sizeof(ngx_temp_file_t));
+            tf = ngx_pcalloc(r->pool, sizeof(ngx_temp_file_t));//创建临时文件
             if (tf == NULL) {
                 return NGX_HTTP_INTERNAL_SERVER_ERROR;
             }
@@ -86,7 +86,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
             rb->temp_file = tf;
 
             if (ngx_create_temp_file(&tf->file, tf->path, tf->pool,
-                                     tf->persistent, tf->clean, tf->access)
+                                     tf->persistent, tf->clean, tf->access)//创建临时我呢见
                 != NGX_OK)
             {
                 return NGX_HTTP_INTERNAL_SERVER_ERROR;

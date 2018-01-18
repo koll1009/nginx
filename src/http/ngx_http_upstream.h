@@ -65,7 +65,7 @@ typedef struct {
 
 typedef struct {
     ngx_hash_t                       headers_in_hash;
-    ngx_array_t                      upstreams;
+    ngx_array_t                      upstreams;//
                                              /* ngx_http_upstream_srv_conf_t */
 } ngx_http_upstream_main_conf_t;
 
@@ -84,9 +84,10 @@ typedef struct {
 } ngx_http_upstream_peer_t;
 
 
+/* ngx_http_upstream_srv_conf_t中的servers字段对应的结构体 */
 typedef struct {
-    ngx_addr_t                      *addrs;
-    ngx_uint_t                       naddrs;
+    ngx_addr_t                      *addrs;//上游服务器地址数组
+    ngx_uint_t                       naddrs;//地址数组的大小
     ngx_uint_t                       weight;
     ngx_uint_t                       max_fails;
     time_t                           fail_timeout;
@@ -95,7 +96,7 @@ typedef struct {
     unsigned                         backup:1;
 } ngx_http_upstream_server_t;
 
-
+/* upstream标志值 */
 #define NGX_HTTP_UPSTREAM_CREATE        0x0001
 #define NGX_HTTP_UPSTREAM_WEIGHT        0x0002
 #define NGX_HTTP_UPSTREAM_MAX_FAILS     0x0004
@@ -108,7 +109,7 @@ struct ngx_http_upstream_srv_conf_s {
     ngx_http_upstream_peer_t         peer;
     void                           **srv_conf;
 
-    ngx_array_t                     *servers;  /* ngx_http_upstream_server_t */
+    ngx_array_t                     *servers;  /* ngx_http_upstream_server_t数组 */
 
     ngx_uint_t                       flags;
     ngx_str_t                        host;//upstream对应的服务器名
@@ -122,7 +123,7 @@ struct ngx_http_upstream_srv_conf_s {
 /* upstream模块处理请求时的参数 */
 typedef struct {
 
-	/* 当在ngx_http_upstream_t结构体中没有实现resolved成员时，upstream这个结构体才会生效，它会定义上游服务器的配置 */
+	/* 当在ngx_http_upstream_t结构体中没有实现resolved成员时，upstream这个结构体才会生效，它会定义上游服务器的配置，属于server{}级别的配置信息 */
     ngx_http_upstream_srv_conf_t    *upstream;
 
     ngx_msec_t                       connect_timeout;//连接上游服务器的超时时间，单位为ms
@@ -276,7 +277,7 @@ struct ngx_http_upstream_s {
 
     ngx_http_upstream_headers_in_t   headers_in;
 
-    ngx_http_upstream_resolved_t    *resolved;
+    ngx_http_upstream_resolved_t    *resolved;//用于解析主机名
 
     ngx_buf_t                        buffer;//接收上游服务器的响应
     size_t                           length;
@@ -292,9 +293,9 @@ struct ngx_http_upstream_s {
 #if (NGX_HTTP_CACHE)
     ngx_int_t                      (*create_key)(ngx_http_request_t *r);
 #endif
-    ngx_int_t                      (*create_request)(ngx_http_request_t *r);
-    ngx_int_t                      (*reinit_request)(ngx_http_request_t *r);
-    ngx_int_t                      (*process_header)(ngx_http_request_t *r);
+    ngx_int_t                      (*create_request)(ngx_http_request_t *r);//用于构造发往上游服务器的请求
+    ngx_int_t                      (*reinit_request)(ngx_http_request_t *r);//与上游服务器通信失败后，如果按照规则还需要再次向上游服务器发送请求，调用该函数
+    ngx_int_t                      (*process_header)(ngx_http_request_t *r);//处理上游服务器返回的报文头
     void                           (*abort_request)(ngx_http_request_t *r);
     void                           (*finalize_request)(ngx_http_request_t *r,
                                          ngx_int_t rc);
@@ -311,7 +312,7 @@ struct ngx_http_upstream_s {
 
     ngx_http_cleanup_pt             *cleanup;
 
-    unsigned                         store:1;
+    unsigned                         store:1;//是否指定文件缓存路径的标志位
     unsigned                         cacheable:1;
     unsigned                         accel:1;
     unsigned                         ssl:1;
@@ -319,7 +320,7 @@ struct ngx_http_upstream_s {
     unsigned                         cache_status:3;
 #endif
 
-    unsigned                         buffering:1;
+    unsigned                         buffering:1;//向下游转发上游的包体时，是否开启更大的内存及临时文件用于缓存来不及发送到下游的响应包体
 
     unsigned                         request_sent:1;
     unsigned                         header_sent:1;

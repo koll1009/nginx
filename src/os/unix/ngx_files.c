@@ -131,6 +131,7 @@ ngx_write_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
 }
 
 
+/* 打开临时文件 */
 ngx_fd_t
 ngx_open_tempfile(u_char *name, ngx_uint_t persistent, ngx_uint_t access)
 {
@@ -140,7 +141,7 @@ ngx_open_tempfile(u_char *name, ngx_uint_t persistent, ngx_uint_t access)
               access ? access : 0600);
 
     if (fd != -1 && !persistent) {
-        unlink((const char *) name);
+        unlink((const char *) name);//文件关闭后会被删除
     }
 
     return fd;

@@ -14,6 +14,7 @@ static ngx_int_t ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u);
 static ngx_int_t ngx_parse_inet6_url(ngx_pool_t *pool, ngx_url_t *u);
 
 
+/* 把192.168.0.1类型的ip地址字符串转换成numberic addr；如果地址为服务器名或者域名，则返回INADDR_NONE */
 in_addr_t
 ngx_inet_addr(u_char *text, size_t len)
 {
@@ -627,18 +628,18 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
 
     u->family = AF_INET;
 
-    host = u->url.data;//主机名首地址
+    host = u->url.data;//主机名地址
 
-    last = host + u->url.len;
+    last = host + u->url.len;//url尾地址
 
     port = ngx_strlchr(host, last, ':');//':'符号后为端口号首地址
 
-    uri = ngx_strlchr(host, last, '/');//'/'符号后为path首地址
+    uri = ngx_strlchr(host, last, '/');//'/'符号后为requset path首地址
 
     args = ngx_strlchr(host, last, '?');//'？'符号后为querystring首地址
 
     if (args) {
-        if (uri == NULL) {//path包含querystring，如果没有相对路径
+        if (uri == NULL) {//path包含querystring
             uri = args;
 
         } else if (args < uri) {
@@ -688,7 +689,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         last = port - 1;
 
     } else {
-        if (uri == NULL) {
+        if (uri == NULL) {//地址里只有端口
 
             if (u->listen) {
 
@@ -716,7 +717,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
             }
         }
 
-        u->no_port = 1;
+        u->no_port = 1;//说明没有端口号
     }
 
     len = last - host;
@@ -726,7 +727,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         return NGX_ERROR;
     }
 
-    if (len == 1 && *host == '*') {
+    if (len == 1 && *host == '*') {//通配地址
         len = 0;
     }
 
@@ -738,9 +739,9 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
     }
 
     if (len) {
-        sin->sin_addr.s_addr = ngx_inet_addr(host, len);
+        sin->sin_addr.s_addr = ngx_inet_addr(host, len);//把地址字符串转换成numberic addr；地址字符串可能是192.168...类型也可能是域名或者服务器名类型
 
-        if (sin->sin_addr.s_addr == INADDR_NONE) {
+        if (sin->sin_addr.s_addr == INADDR_NONE) {//说明是服务器名类型
             p = ngx_alloc(++len, pool->log);
             if (p == NULL) {
                 return NGX_ERROR;
@@ -765,7 +766,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         }
 
     } else {
-        sin->sin_addr.s_addr = INADDR_ANY;
+        sin->sin_addr.s_addr = INADDR_ANY;//任意本机地址
         u->wildcard = 1;
     }
 
@@ -778,7 +779,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         return NGX_OK;
     }
 
-    if (ngx_inet_resolve_host(pool, u) != NGX_OK) {
+    if (ngx_inet_resolve_host(pool, u) != NGX_OK) {//解析主机
         return NGX_ERROR;
     }
 
@@ -921,7 +922,7 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 
         (void) ngx_cpystrn(host, u->host.data, u->host.len + 1);
 
-        h = gethostbyname((char *) host);
+        h = gethostbyname((char *) host);//取主机信息，h里有主机host对应的所有ip4地址或ip6地址
 
         ngx_free(host);
 
@@ -946,7 +947,7 @@ ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 
         u->naddrs = i;
 
-        for (i = 0; i < u->naddrs; i++) {
+        for (i = 0; i < u->naddrs; i++) {//依次初始化每个sock addr
 
             sin = ngx_pcalloc(pool, sizeof(struct sockaddr_in));
             if (sin == NULL) {

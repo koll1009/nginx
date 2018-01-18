@@ -60,7 +60,7 @@ struct ngx_pool_s {
     ngx_pool_data_t       d;
     size_t                max;//从内存池分配的上限值，如果超出则使用ngx_pool_large_t管理
     ngx_pool_t           *current;
-    ngx_chain_t          *chain;
+    ngx_chain_t          *chain;//缓存的空闲ngx_chain_t
     ngx_pool_large_t     *large;//大块内存链表
     ngx_pool_cleanup_t   *cleanup;
     ngx_log_t            *log;

@@ -371,7 +371,7 @@ ngx_conf_bitmask_t  ngx_http_upstream_ignore_headers_masks[] = {
 };
 
 
-/* 创建ngx_http_upstream_t结构体 */
+/* 创建ngx_http_upstream_t结构体，其中成员还需要各个http模块自行设置 */
 ngx_int_t
 ngx_http_upstream_create(ngx_http_request_t *r)
 {
@@ -435,7 +435,7 @@ ngx_http_upstream_init(ngx_http_request_t *r)
     ngx_http_upstream_init_request(r);//初始化上游服务器的请求
 }
 
-
+/* 初始化http upstream服务器的请求 */
 static void
 ngx_http_upstream_init_request(ngx_http_request_t *r)
 {
@@ -491,7 +491,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
         u->request_bufs = r->request_body->bufs;
     }
 
-    if (u->create_request(r) != NGX_OK) {
+    if (u->create_request(r) != NGX_OK) {//创建上游请求
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
         return;
     }
@@ -556,7 +556,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
                 return;
             }
 
-            ngx_http_upstream_connect(r, u);
+            ngx_http_upstream_connect(r, u);//连接上游服务器
 
             return;
         }
@@ -4214,7 +4214,7 @@ invalid:
     return NGX_CONF_ERROR;
 }
 
-
+/* 新增一个上游服务器 */
 ngx_http_upstream_srv_conf_t *
 ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 {
@@ -4225,7 +4225,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 
     if (!(flags & NGX_HTTP_UPSTREAM_CREATE)) {
 
-        if (ngx_parse_url(cf->pool, u) != NGX_OK) {
+        if (ngx_parse_url(cf->pool, u) != NGX_OK) {//解析url
             if (u->err) {
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                    "%s in upstream \"%V\"", u->err, &u->url);
@@ -4235,20 +4235,21 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
         }
     }
 
-    umcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_upstream_module);
+    umcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_upstream_module);//找到ngx_http_upstream_module的配置信息上下文
 
     uscfp = umcf->upstreams.elts;
 
+	/* 存在性检查 */
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
         if (uscfp[i]->host.len != u->host.len
             || ngx_strncasecmp(uscfp[i]->host.data, u->host.data, u->host.len)
-               != 0)
+               != 0)//首先比对上游服务器名是否一致
         {
             continue;
         }
 
-        if ((flags & NGX_HTTP_UPSTREAM_CREATE)
+        if ((flags & NGX_HTTP_UPSTREAM_CREATE)//服务器名一致，但是标志里标明了需要新创建，则报错
              && (uscfp[i]->flags & NGX_HTTP_UPSTREAM_CREATE))
         {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
@@ -4256,14 +4257,14 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
             return NULL;
         }
 
-        if ((uscfp[i]->flags & NGX_HTTP_UPSTREAM_CREATE) && u->port) {
+        if ((uscfp[i]->flags & NGX_HTTP_UPSTREAM_CREATE) && u->port) {//需要新创建的上游服务器需要有端口号
             ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                                "upstream \"%V\" may not have port %d",
                                &u->host, u->port);
             return NULL;
         }
 
-        if ((flags & NGX_HTTP_UPSTREAM_CREATE) && uscfp[i]->port) {
+        if ((flags & NGX_HTTP_UPSTREAM_CREATE) && uscfp[i]->port) {//
             ngx_log_error(NGX_LOG_WARN, cf->log, 0,
                           "upstream \"%V\" may not have port %d in %s:%ui",
                           &u->host, uscfp[i]->port,
@@ -4271,12 +4272,12 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
             return NULL;
         }
 
-        if (uscfp[i]->port != u->port) {
+        if (uscfp[i]->port != u->port) {//端口号不一致，则新创建
             continue;
         }
 
         if (uscfp[i]->default_port && u->default_port
-            && uscfp[i]->default_port != u->default_port)
+            && uscfp[i]->default_port != u->default_port)//默认端口不一致说明协议不一致
         {
             continue;
         }
@@ -4300,7 +4301,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
     uscf->port = u->port;
     uscf->default_port = u->default_port;
 
-    if (u->naddrs == 1) {
+    if (u->naddrs == 1) {//如果有具体的ip地址，则压入upstream server{}级别配置上下文中
         uscf->servers = ngx_array_create(cf->pool, 1,
                                          sizeof(ngx_http_upstream_server_t));
         if (uscf->servers == NULL) {
@@ -4318,7 +4319,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
         us->naddrs = u->naddrs;
     }
 
-    uscfp = ngx_array_push(&umcf->upstreams);
+    uscfp = ngx_array_push(&umcf->upstreams);//把新建的ngx_http_upstream_srv_conf_t压入到队列
     if (uscfp == NULL) {
         return NULL;
     }
