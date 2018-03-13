@@ -406,7 +406,7 @@ struct ngx_http_request_s {
     ngx_http_handler_pt               content_handler;//在NGX_HTTP_FIND_CONFIG_PHASE阶段，把该值指向相匹配location下的handler
     ngx_uint_t                        access_code;
 
-    ngx_http_variable_value_t        *variables;
+    ngx_http_variable_value_t        *variables;//存储已解析过的变量数组，变量的索引与cmcf中一致
 
 #if (NGX_PCRE)
     ngx_uint_t                        ncaptures;

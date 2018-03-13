@@ -154,9 +154,9 @@ typedef struct {
 
     ngx_hash_t                 headers_in_hash;//http head key哈希表
 
-    ngx_hash_t                 variables_hash;//http变量哈希表
+    ngx_hash_t                 variables_hash;//存储变量的散列表
 
-    ngx_array_t                variables;       /* ngx_http_variable_t */
+    ngx_array_t                variables;     //存储索引过的变量的数组 ngx_http_variable_t 
     ngx_uint_t                 ncaptures;
 
     ngx_uint_t                 server_names_hash_max_size;
@@ -165,13 +165,13 @@ typedef struct {
     ngx_uint_t                 variables_hash_max_size;
     ngx_uint_t                 variables_hash_bucket_size;
 
-    ngx_hash_keys_arrays_t    *variables_keys;//http核心变量数组，用以保存预定义的变量，用以初始化为支持通配符的哈希表
+    ngx_hash_keys_arrays_t    *variables_keys;//用于构造variables_hash散列表的初始结构，key为变量name value为对应的ngx_http_variable_t
 
     ngx_array_t               *ports;
 
     ngx_uint_t                 try_files;       /* unsigned  try_files:1 */
 
-    ngx_http_phase_t           phases[NGX_HTTP_LOG_PHASE + 1];//用于http框架初始化时各http模块在任意阶段添加处理方法
+    ngx_http_phase_t           phases[NGX_HTTP_LOG_PHASE + 1];//用于http框架初始化时，各http模块在对应的phase中添加handler回调函数
 } ngx_http_core_main_conf_t;
 
 

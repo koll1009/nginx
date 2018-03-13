@@ -9,10 +9,11 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 
-
+/*  */
 typedef struct {
-    ngx_array_t  *codes;        /* uintptr_t */
+    ngx_array_t  *codes;  //保存着所属location下所有编译后的脚本      /* uintptr_t */
 
+    // 每一个请求的ngx_http_script_engine_t脚本引擎中都会有一个变量值栈，即上面提到的ngx_http_variable_value_t *sp，它的大小就是stack_size
     ngx_uint_t    stack_size;
 
     ngx_flag_t    log;
@@ -133,6 +134,7 @@ ngx_module_t  ngx_http_rewrite_module = {
 };
 
 
+/* ngx_http_server_rewrite_module和ngx_http_rewrite_module两个阶段的checker函数 */
 static ngx_int_t
 ngx_http_rewrite_handler(ngx_http_request_t *r)
 {
@@ -175,7 +177,7 @@ ngx_http_rewrite_handler(ngx_http_request_t *r)
     e->log = rlcf->log;
     e->status = NGX_DECLINED;
 
-    while (*(uintptr_t *) e->ip) {
+    while (*(uintptr_t *) e->ip) {//依次执行
         code = *(ngx_http_script_code_pt *) e->ip;
         code(e);
     }
@@ -192,6 +194,7 @@ ngx_http_rewrite_handler(ngx_http_request_t *r)
 }
 
 
+/*  */
 static ngx_int_t
 ngx_http_rewrite_var(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     uintptr_t data)
@@ -888,7 +891,7 @@ ngx_http_rewrite_variable(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     return NGX_CONF_OK;
 }
 
-
+/* ngx_http_rewrite_module的set字段解析，set $var value */
 static char *
 ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -902,7 +905,7 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
-    if (value[1].data[0] != '$') {
+    if (value[1].data[0] != '$') {//set后跟变量标志符$
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                            "invalid variable name \"%V\"", &value[1]);
         return NGX_CONF_ERROR;
@@ -911,12 +914,12 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value[1].len--;
     value[1].data++;
 
-    v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);
+    v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);//新增变量
     if (v == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    index = ngx_http_get_variable_index(cf, &value[1]);
+    index = ngx_http_get_variable_index(cf, &value[1]);//把变量索引化
     if (index == NGX_ERROR) {
         return NGX_CONF_ERROR;
     }
@@ -926,15 +929,15 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         && ngx_strncasecmp(value[1].data, (u_char *) "sent_http_", 10) != 0
         && ngx_strncasecmp(value[1].data, (u_char *) "upstream_http_", 14) != 0)
     {
-        v->get_handler = ngx_http_rewrite_var;
+        v->get_handler = ngx_http_rewrite_var;//通用的变量get handler
         v->data = index;
     }
 
-    if (ngx_http_rewrite_value(cf, lcf, &value[2]) != NGX_CONF_OK) {
+    if (ngx_http_rewrite_value(cf, lcf, &value[2]) != NGX_CONF_OK) {//变量值的脚本处理方法
         return NGX_CONF_ERROR;
     }
 
-    if (v->set_handler) {
+    if (v->set_handler) {//对于已定义了set handle的变量
         vhcode = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                    sizeof(ngx_http_script_var_handler_code_t));
         if (vhcode == NULL) {
@@ -948,6 +951,7 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_OK;
     }
 
+	/* 编译变量名 */
     vcode = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                        sizeof(ngx_http_script_var_code_t));
     if (vcode == NULL) {
@@ -970,22 +974,22 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     ngx_http_script_value_code_t          *val;
     ngx_http_script_complex_value_code_t  *complex;
 
-    n = ngx_http_script_variables_count(value);
+    n = ngx_http_script_variables_count(value);//计算字符串中变量的个数
 
-    if (n == 0) {
+    if (n == 0) {//值字符串中没有引用其他变量
         val = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                          sizeof(ngx_http_script_value_code_t));
         if (val == NULL) {
             return NGX_CONF_ERROR;
         }
 
-        n = ngx_atoi(value->data, value->len);
+        n = ngx_atoi(value->data, value->len);//如果变量值非整型，则标记为0
 
         if (n == NGX_ERROR) {
             n = 0;
         }
 
-        val->code = ngx_http_script_value_code;
+        val->code = ngx_http_script_value_code;//指令
         val->value = (uintptr_t) n;
         val->text_len = (uintptr_t) value->len;
         val->text_data = (uintptr_t) value->data;
@@ -993,6 +997,7 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
         return NGX_CONF_OK;
     }
 
+	/* 复杂脚本指令 */
     complex = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                  sizeof(ngx_http_script_complex_value_code_t));
     if (complex == NULL) {
@@ -1005,13 +1010,13 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     ngx_memzero(&sc, sizeof(ngx_http_script_compile_t));
 
     sc.cf = cf;
-    sc.source = value;
+    sc.source = value;//脚本字符串
     sc.lengths = &complex->lengths;
-    sc.values = &lcf->codes;
-    sc.variables = n;
-    sc.complete_lengths = 1;
+    sc.values = &lcf->codes;//
+    sc.variables = n;//变量个数
+    sc.complete_lengths = 1;//
 
-    if (ngx_http_script_compile(&sc) != NGX_OK) {
+    if (ngx_http_script_compile(&sc) != NGX_OK) {//编译
         return NGX_CONF_ERROR;
     }
 

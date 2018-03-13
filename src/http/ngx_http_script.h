@@ -14,16 +14,17 @@
 #include <ngx_http.h>
 
 
+/* 脚本执行上下文结构体 */
 typedef struct {
-    u_char                     *ip;
+    u_char                     *ip;//待执行的脚本指令，指向结构体首字段为ngx_http_script_code_pt的类型
     u_char                     *pos;
-    ngx_http_variable_value_t  *sp;
+    ngx_http_variable_value_t  *sp;//变量值构成的栈
 
     ngx_str_t                   buf;
     ngx_str_t                   line;
 
     /* the start of the rewritten arguments */
-    u_char                     *args;
+    u_char                     *args;//参数为止
 
     unsigned                    flushed:1;
     unsigned                    skip:1;
@@ -31,27 +32,28 @@ typedef struct {
     unsigned                    is_args:1;
     unsigned                    log:1;
 
-    ngx_int_t                   status;
+    ngx_int_t                   status;//脚本执行状态
     ngx_http_request_t         *request;
 } ngx_http_script_engine_t;
 
 
+/* 脚本编译结构体 */
 typedef struct {
     ngx_conf_t                 *cf;
-    ngx_str_t                  *source;
+    ngx_str_t                  *source;//待编译的脚本字符串
 
-    ngx_array_t               **flushes;
-    ngx_array_t               **lengths;
-    ngx_array_t               **values;
+    ngx_array_t               **flushes;//第一个array用来保存各code对应的变量索引
+    ngx_array_t               **lengths;//存放计算value值长度的指令
+    ngx_array_t               **values;//存放指令
 
-    ngx_uint_t                  variables;
+    ngx_uint_t                  variables;//变量数目
     ngx_uint_t                  ncaptures;
     ngx_uint_t                  captures_mask;
     ngx_uint_t                  size;
 
     void                       *main;
 
-    unsigned                    compile_args:1;
+    unsigned                    compile_args:1;//是否解析脚本中参数的标志
     unsigned                    complete_lengths:1;
     unsigned                    complete_values:1;
     unsigned                    zero:1;
@@ -92,9 +94,10 @@ typedef struct {
 } ngx_http_script_copy_code_t;
 
 
+/* 脚本中变量指令的描述符 */
 typedef struct {
-    ngx_http_script_code_pt     code;
-    uintptr_t                   index;
+    ngx_http_script_code_pt     code;//具体的脚本指令
+    uintptr_t                   index;//变量的索引值
 } ngx_http_script_var_code_t;
 
 
@@ -189,17 +192,19 @@ typedef struct {
 } ngx_http_script_if_code_t;
 
 
+/* 脚本指令中复杂类型变量值（即变量值中含有变量）结构体 */
 typedef struct {
     ngx_http_script_code_pt     code;
     ngx_array_t                *lengths;
 } ngx_http_script_complex_value_code_t;
 
 
+/* 脚本指令中变量值结构体 */
 typedef struct {
-    ngx_http_script_code_pt     code;
+    ngx_http_script_code_pt     code;//编译变量名的函数指针
     uintptr_t                   value;
-    uintptr_t                   text_len;
-    uintptr_t                   text_data;
+    uintptr_t                   text_len;//变量值的长度
+    uintptr_t                   text_data;//变量值的地址
 } ngx_http_script_value_code_t;
 
 

@@ -25,20 +25,20 @@ typedef void (*ngx_http_set_variable_pt) (ngx_http_request_t *r,
 typedef ngx_int_t (*ngx_http_get_variable_pt) (ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 
-
-#define NGX_HTTP_VAR_CHANGEABLE   1
-#define NGX_HTTP_VAR_NOCACHEABLE  2
-#define NGX_HTTP_VAR_INDEXED      4
-#define NGX_HTTP_VAR_NOHASH       8
+/* 变量的特性标志 */
+#define NGX_HTTP_VAR_CHANGEABLE   1  //可变标志
+#define NGX_HTTP_VAR_NOCACHEABLE  2  //不要缓存标志，每次用到变量都要重新解析
+#define NGX_HTTP_VAR_INDEXED      4  //将变量索引标志，加快访问
+#define NGX_HTTP_VAR_NOHASH       8  //不要将变量放入哈希表
 
 /* nginx http变量描述符 */
 struct ngx_http_variable_s {
     ngx_str_t                     name;   /* must be first to build the hash */
     ngx_http_set_variable_pt      set_handler;//set函数
     ngx_http_get_variable_pt      get_handler;//get函数
-    uintptr_t                     data;
-    ngx_uint_t                    flags;
-    ngx_uint_t                    index;
+    uintptr_t                     data;//set&get回调函数的参数
+    ngx_uint_t                    flags;//变量的特性标记
+    ngx_uint_t                    index;//变量在请求的缓存数组中的索引
 };
 
 

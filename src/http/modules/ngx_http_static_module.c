@@ -44,7 +44,7 @@ ngx_module_t  ngx_http_static_module = {
     NGX_MODULE_V1_PADDING
 };
 
-
+/* 本模块的phase handler */
 static ngx_int_t
 ngx_http_static_handler(ngx_http_request_t *r)
 {
@@ -59,7 +59,7 @@ ngx_http_static_handler(ngx_http_request_t *r)
     ngx_open_file_info_t       of;
     ngx_http_core_loc_conf_t  *clcf;
 
-    if (!(r->method & (NGX_HTTP_GET|NGX_HTTP_HEAD|NGX_HTTP_POST))) {
+    if (!(r->method & (NGX_HTTP_GET|NGX_HTTP_HEAD|NGX_HTTP_POST))) {//本模块支持此三种http method
         return NGX_HTTP_NOT_ALLOWED;
     }
 

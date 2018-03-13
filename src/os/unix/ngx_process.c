@@ -10,11 +10,11 @@
 #include <ngx_event.h>
 #include <ngx_channel.h>
 
-
+/* ngx信号描述符 */
 typedef struct {
     int     signo;//信号号
     char   *signame;//信号名
-    char   *name;
+    char   *name;//信号对应的Nginx命令
     void  (*handler)(int signo);//信号处理函数
 } ngx_signal_t;
 

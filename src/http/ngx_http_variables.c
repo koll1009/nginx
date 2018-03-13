@@ -109,7 +109,7 @@ static ngx_int_t ngx_http_variable_pid(ngx_http_request_t *r,
  * ngx_http_variable_unknown_header_in(), but for perfomance reasons
  * they are handled using dedicated entries
  */
-/* http核心变量 */
+/* http变量 */
 static ngx_http_variable_t  ngx_http_core_variables[] = {
 
     { ngx_string("http_host"), NULL, ngx_http_variable_header,
@@ -265,6 +265,7 @@ ngx_http_variable_value_t  ngx_http_variable_true_value =
     ngx_http_variable("1");
 
 
+/* 添加内部变量方法,即把变量添加到 ngx_http_core_main_conf_t的variables_keys的keys数组中*/
 ngx_http_variable_t *
 ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
 {
@@ -277,7 +278,7 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
     key = cmcf->variables_keys->keys.elts;
-    for (i = 0; i < cmcf->variables_keys->keys.nelts; i++) {
+    for (i = 0; i < cmcf->variables_keys->keys.nelts; i++) {//查重
         if (name->len != key[i].key.len
             || ngx_strncasecmp(name->data, key[i].key.data, name->len) != 0)
         {
@@ -286,7 +287,7 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
 
         v = key[i].value;
 
-        if (!(v->flags & NGX_HTTP_VAR_CHANGEABLE)) {
+        if (!(v->flags & NGX_HTTP_VAR_CHANGEABLE)) {//对已定义的变量的二次添加一定要有可修改标志
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "the duplicate \"%V\" variable", name);
             return NULL;
@@ -314,7 +315,7 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
     v->flags = flags;
     v->index = 0;
 
-    rc = ngx_hash_add_key(cmcf->variables_keys, &v->name, v, 0);
+    rc = ngx_hash_add_key(cmcf->variables_keys, &v->name, v, 0);//添加到hash array中，在后续操作中会完成哈希映射
 
     if (rc == NGX_ERROR) {
         return NULL;
@@ -329,7 +330,10 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
     return v;
 }
 
-
+/* 取变量的索引值
+ * 先从ngx_http_core_main_conf_t中的variables array中搜索已索引的变量，搜索到则返回索引值；
+ * 如果未设置索引值，则添加到索引数组的尾部
+ */
 ngx_int_t
 ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
 {
@@ -341,7 +345,7 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
 
     v = cmcf->variables.elts;
 
-    if (v == NULL) {
+    if (v == NULL) {//初始化变量索引数组
         if (ngx_array_init(&cmcf->variables, cf->pool, 4,
                            sizeof(ngx_http_variable_t))
             != NGX_OK)
@@ -350,7 +354,7 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
         }
 
     } else {
-        for (i = 0; i < cmcf->variables.nelts; i++) {
+        for (i = 0; i < cmcf->variables.nelts; i++) {//查重
             if (name->len != v[i].name.len
                 || ngx_strncasecmp(name->data, v[i].name.data, name->len) != 0)
             {
@@ -361,6 +365,7 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
         }
     }
 
+	/* 添加到索引数组中 */
     v = ngx_array_push(&cmcf->variables);
     if (v == NULL) {
         return NGX_ERROR;
@@ -384,6 +389,7 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
 }
 
 
+/* 根据变量索引号，取变量值 */
 ngx_http_variable_value_t *
 ngx_http_get_indexed_variable(ngx_http_request_t *r, ngx_uint_t index)
 {
@@ -392,18 +398,20 @@ ngx_http_get_indexed_variable(ngx_http_request_t *r, ngx_uint_t index)
 
     cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
-    if (cmcf->variables.nelts <= index) {
+    if (cmcf->variables.nelts <= index) {//索引超范围
         ngx_log_error(NGX_LOG_ALERT, r->connection->log, 0,
                       "unknown variable index: %d", index);
         return NULL;
     }
 
+	//request结构中缓存着已索引的数组，not_flag和valid标志代表着变量已经解析过，所以直接返回
     if (r->variables[index].not_found || r->variables[index].valid) {
         return &r->variables[index];
     }
 
     v = cmcf->variables.elts;
 
+	/* 调用变量的get handler来解析 */
     if (v[index].get_handler(r, &r->variables[index], v[index].data)
         == NGX_OK)
     {
@@ -414,13 +422,14 @@ ngx_http_get_indexed_variable(ngx_http_request_t *r, ngx_uint_t index)
         return &r->variables[index];
     }
 
+	/* 未解析到变量的value，使用not_found标记 */
     r->variables[index].valid = 0;
     r->variables[index].not_found = 1;
 
     return NULL;
 }
 
-
+/* 通过变量索引取值，与ngx_http_get_indexed_variable类似，但要判断是否有缓存标志 */
 ngx_http_variable_value_t *
 ngx_http_get_flushed_variable(ngx_http_request_t *r, ngx_uint_t index)
 {
@@ -429,7 +438,7 @@ ngx_http_get_flushed_variable(ngx_http_request_t *r, ngx_uint_t index)
     v = &r->variables[index];
 
     if (v->valid || v->not_found) {
-        if (!v->no_cacheable) {
+        if (!v->no_cacheable) {//先判断是否可使用缓存
             return v;
         }
 
@@ -441,6 +450,7 @@ ngx_http_get_flushed_variable(ngx_http_request_t *r, ngx_uint_t index)
 }
 
 
+/* 根据变量名，取变量值，先检索散列表，后按照特殊变量解析 */
 ngx_http_variable_value_t *
 ngx_http_get_variable(ngx_http_request_t *r, ngx_str_t *name, ngx_uint_t key)
 {
@@ -453,14 +463,14 @@ ngx_http_get_variable(ngx_http_request_t *r, ngx_str_t *name, ngx_uint_t key)
     v = ngx_hash_find(&cmcf->variables_hash, key, name->data, name->len);
 
     if (v) {
-        if (v->flags & NGX_HTTP_VAR_INDEXED) {
+        if (v->flags & NGX_HTTP_VAR_INDEXED) {//变量索引化标志，有该标志，说明可以从缓存数组中取
             return ngx_http_get_flushed_variable(r, v->index);
 
         } else {
 
             vv = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t));
 
-            if (vv && v->get_handler(r, vv, v->data) == NGX_OK) {
+            if (vv && v->get_handler(r, vv, v->data) == NGX_OK) {//调用变量的get函数取值
                 return vv;
             }
 
@@ -468,6 +478,7 @@ ngx_http_get_variable(ngx_http_request_t *r, ngx_str_t *name, ngx_uint_t key)
         }
     }
 
+	/* 散列表里没有该变量，所以要以特殊变量的形式解析，有5种类型，前缀分别为arg_,http_,sent_http_,cookie_,upstream_http_ */
     vv = ngx_palloc(r->pool, sizeof(ngx_http_variable_value_t));
     if (vv == NULL) {
         return NULL;
@@ -709,7 +720,7 @@ ngx_http_variable_headers(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     return NGX_OK;
 }
 
-
+/* 从request header中解析变量 */
 static ngx_int_t
 ngx_http_variable_unknown_header_in(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data)
@@ -782,7 +793,7 @@ ngx_http_variable_unknown_header(ngx_http_variable_value_t *v, ngx_str_t *var,
         }
     }
 
-    v->not_found = 1;
+    v->not_found = 1;//未找到匹配的变量值，标记not_found
 
     return NGX_OK;
 }
@@ -944,7 +955,7 @@ ngx_http_variable_binary_remote_addr(ngx_http_request_t *r,
     return NGX_OK;
 }
 
-
+/* 变量"remote_addr"的get handler */
 static ngx_int_t
 ngx_http_variable_remote_addr(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data)
@@ -1893,7 +1904,7 @@ ngx_http_regex_exec(ngx_http_request_t *r, ngx_http_regex_t *re, ngx_str_t *s)
 #endif
 
 
-/* http添加核心变量 */
+/* 添加核心变量 */
 ngx_int_t
 ngx_http_variables_add_core_vars(ngx_conf_t *cf)
 {
@@ -1918,7 +1929,7 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
         return NGX_ERROR;
     }
 
-	//把预定义的变量依次添加到变量哈希数组中
+	//把预定义的核心变量依次添加到变量哈希数组中
     for (v = ngx_http_core_variables; v->name.len; v++) {
         rc = ngx_hash_add_key(cmcf->variables_keys, &v->name, v,
                               NGX_HASH_READONLY_KEY);
@@ -1957,8 +1968,8 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
 
     for (i = 0; i < cmcf->variables.nelts; i++) {
 
-		/* 初始化个变量的get函数 */
-        for (n = 0; n < cmcf->variables_keys->keys.nelts; n++) {
+		
+        for (n = 0; n < cmcf->variables_keys->keys.nelts; n++) {//variables_keys中存储着所有要散列化的变量
 
             av = key[n].value;
 
@@ -1979,6 +1990,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
             }
         }
 
+		/* 5类特殊变量的get函数是固定的 */
         if (ngx_strncmp(v[i].name.data, "http_", 5) == 0) {
             v[i].get_handler = ngx_http_variable_unknown_header_in;
             v[i].data = (uintptr_t) &v[i].name;
@@ -2029,7 +2041,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
     for (n = 0; n < cmcf->variables_keys->keys.nelts; n++) {
         av = key[n].value;
 
-        if (av->flags & NGX_HTTP_VAR_NOHASH) {
+        if (av->flags & NGX_HTTP_VAR_NOHASH) {//
             key[n].key.data = NULL;
         }
     }
