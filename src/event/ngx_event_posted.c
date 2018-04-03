@@ -18,6 +18,7 @@ ngx_mutex_t                      *ngx_posted_events_mutex;
 #endif
 
 
+/* post队列中的事件处理 */
 void
 ngx_event_process_posted(ngx_cycle_t *cycle,
     ngx_thread_volatile ngx_event_t **posted)

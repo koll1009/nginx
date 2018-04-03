@@ -164,7 +164,7 @@ struct ngx_event_s {
 
 #endif
 
-    /* the links of the posted queue */
+    /* the links of the posted queue ¡¥»Îpost∂”¡– */
     ngx_event_t     *next;
     ngx_event_t    **prev;
 

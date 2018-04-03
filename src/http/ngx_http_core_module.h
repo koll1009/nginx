@@ -93,7 +93,7 @@ typedef struct {
     ngx_uint_t                 deferred_accept;
 #endif
 
-    u_char                     addr[NGX_SOCKADDR_STRLEN + 1];
+    u_char                     addr[NGX_SOCKADDR_STRLEN + 1];//ip:port的字符串形式
 } ngx_http_listen_opt_t;
 
 
@@ -167,7 +167,7 @@ typedef struct {
 
     ngx_hash_keys_arrays_t    *variables_keys;//用于构造variables_hash散列表的初始结构，key为变量name value为对应的ngx_http_variable_t
 
-    ngx_array_t               *ports;
+    ngx_array_t               *ports;/* 管理所有监听port管理项，每个监听端口管理对应的ip地址，ip地址管理对应的core serser配置项 */
 
     ngx_uint_t                 try_files;       /* unsigned  try_files:1 */
 
@@ -180,7 +180,7 @@ typedef struct {
     ngx_array_t                 server_names;/* 一个server{}可以配置多个名字 */
 
     /* server ctx */
-    ngx_http_conf_ctx_t        *ctx;//指向server模块解析对应的
+    ngx_http_conf_ctx_t        *ctx;//指向server模块解析对应的http配置管理上下文
 
     ngx_str_t                   server_name;
 
@@ -201,7 +201,7 @@ typedef struct {
     unsigned                    captures:1;
 #endif
 
-    ngx_http_core_loc_conf_t  **named_locations;//指向所有named location配置项
+    ngx_http_core_loc_conf_t  **named_locations;//指向所有named location的core配置项
 } ngx_http_core_srv_conf_t;
 
 
@@ -243,7 +243,7 @@ typedef struct {
     ngx_uint_t                 naddrs;//addrs数组大小
 } ngx_http_port_t;
 
-
+/* 监听端口管理器，每个端口对应n个地址，每个地址对应n个server{}配置项 */
 typedef struct {
     ngx_int_t                  family;
     in_port_t                  port;
@@ -309,7 +309,7 @@ struct ngx_http_core_loc_conf_s {
     unsigned      named:1;//重定向标志
 
     unsigned      exact_match:1;//精确匹配标志
-    unsigned      noregex:1;
+    unsigned      noregex:1;//前半部分匹配标志
 
     unsigned      auto_redirect:1;
 #if (NGX_HTTP_GZIP)
@@ -321,7 +321,7 @@ struct ngx_http_core_loc_conf_s {
 
     ngx_http_location_tree_node_t   *static_locations;//location静态搜索树
 #if (NGX_PCRE)
-    ngx_http_core_loc_conf_t       **regex_locations;
+    ngx_http_core_loc_conf_t       **regex_locations;//存储所有regex匹配类location的core loc配置信息指针
 #endif
 
     /* pointer to the modules' loc_conf */
@@ -422,19 +422,19 @@ struct ngx_http_core_loc_conf_s {
     ngx_uint_t    types_hash_max_size;
     ngx_uint_t    types_hash_bucket_size;
 
-    ngx_queue_t  *locations;
+    ngx_queue_t  *locations;//子级location队列
 
 #if 0
     ngx_http_core_loc_conf_t  *prev_location;
 #endif
 };
 
-
+/* location队列结构体 */
 typedef struct {
-    ngx_queue_t                      queue;
-    ngx_http_core_loc_conf_t        *exact;
-    ngx_http_core_loc_conf_t        *inclusive;
-    ngx_str_t                       *name;
+    ngx_queue_t                      queue;//location链表节点
+    ngx_http_core_loc_conf_t        *exact;//精确匹配，则使用该字段指向配置信息
+    ngx_http_core_loc_conf_t        *inclusive;//统配类型，包^~ path代表的前半部分匹配和location /path代表的文件夹路径形式
+    ngx_str_t                       *name;//指向location的名字，即path字符串
     u_char                          *file_name;
     ngx_uint_t                       line;
     ngx_queue_t                      list;//保存name前缀相同的结点，例如location name为"name",则"name1" "name2"的结点会插入该链表

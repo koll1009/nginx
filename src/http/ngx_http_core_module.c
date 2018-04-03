@@ -1499,14 +1499,13 @@ ngx_http_update_location_config(ngx_http_request_t *r)
 }
 
 
-/*
+/* 搜索合适的location
  * NGX_OK       - exact or regex match
  * NGX_DONE     - auto redirect
  * NGX_AGAIN    - inclusive match
  * NGX_ERROR    - regex error
  * NGX_DECLINED - no match
  */
-
 static ngx_int_t
 ngx_http_core_find_location(ngx_http_request_t *r)
 {
@@ -1577,7 +1576,7 @@ ngx_http_core_find_location(ngx_http_request_t *r)
 }
 
 
-/*
+/* 搜索静态location tree
  * NGX_OK       - exact match
  * NGX_DONE     - auto redirect
  * NGX_AGAIN    - inclusive match
@@ -2637,7 +2636,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     ngx_http_core_srv_conf_t    *cscf, **cscfp;
     ngx_http_core_main_conf_t   *cmcf;
 
-    ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));
+    ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));//分配http配置上下文管理器
     if (ctx == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -2694,7 +2693,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     cmcf = ctx->main_conf[ngx_http_core_module.ctx_index];
 
-    cscfp = ngx_array_push(&cmcf->servers);
+    cscfp = ngx_array_push(&cmcf->servers);//把该server{}的核心配置上下文指针添加到servers数组中
     if (cscfp == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -2776,6 +2775,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         return NGX_CONF_ERROR;
     }
 
+
     for (i = 0; ngx_modules[i]; i++) {
         if (ngx_modules[i]->type != NGX_HTTP_MODULE) {
             continue;
@@ -2793,7 +2793,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     clcf = ctx->loc_conf[ngx_http_core_module.ctx_index];
-    clcf->loc_conf = ctx->loc_conf;
+    clcf->loc_conf = ctx->loc_conf;//把loc级别的配置上下文指针保存在core模块的loc配置上下文中
 
     value = cf->args->elts;
 
@@ -2803,17 +2803,21 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         mod = value[1].data;
         name = &value[2];
 
-        if (len == 1 && mod[0] == '=') {// =表示精确匹配
+		/* location = /path 表示精确匹配，当uri=/path时，使用该location配置 */
+        if (len == 1 && mod[0] == '=') {
 
             clcf->name = *name;
             clcf->exact_match = 1;
 
-        } else if (len == 2 && mod[0] == '^' && mod[1] == '~') {//匹配时，只要前半部分匹配就好
+        } 
+		/* location ^~ /path，前半部分匹配即可，即以/path的uri请求使用该location配置 */
+		else if (len == 2 && mod[0] == '^' && mod[1] == '~') {
 
             clcf->name = *name;
             clcf->noregex = 1;
 
-        } else if (len == 1 && mod[0] == '~') {//区分大小写的正则表达式
+        }
+		else if (len == 1 && mod[0] == '~') {//区分大小写的正则表达式
 
             if (ngx_http_core_regex_location(cf, clcf, name, 0) != NGX_OK) {
                 return NGX_CONF_ERROR;
@@ -2831,7 +2835,8 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
             return NGX_CONF_ERROR;
         }
 
-    } else {
+    } 
+	else {
 
         name = &value[1];
 
@@ -2879,6 +2884,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
     pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];
 
+	/* 如果有location嵌套，则要检查合法性 */
     if (pclcf->name.len) {
 
         /* nested location */
@@ -2887,7 +2893,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         clcf->prev_location = pclcf;
 #endif
 
-        if (pclcf->exact_match) {
+        if (pclcf->exact_match) {//精确匹配的location里面不允许嵌套
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "location \"%V\" cannot be inside "
                                "the exact location \"%V\"",
@@ -2895,7 +2901,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
             return NGX_CONF_ERROR;
         }
 
-        if (pclcf->named) {
+        if (pclcf->named) {//重定向的location里面不允许嵌套
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "location \"%V\" cannot be inside "
                                "the named location \"%V\"",
@@ -2903,7 +2909,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
             return NGX_CONF_ERROR;
         }
 
-        if (clcf->named) {
+        if (clcf->named) {//重定向的location也不允许嵌套在其他location里
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "named location \"%V\" can be "
                                "on the server level only",
@@ -2915,7 +2921,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
 #if (NGX_PCRE)
         if (clcf->regex == NULL
-            && ngx_strncmp(clcf->name.data, pclcf->name.data, len) != 0)
+            && ngx_strncmp(clcf->name.data, pclcf->name.data, len) != 0)//被嵌套的子类的path必须包含父类location的path
 #else
         if (ngx_strncmp(clcf->name.data, pclcf->name.data, len) != 0)
 #endif
@@ -2942,7 +2948,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     return rv;
 }
 
-
+/* 正则表达式 */
 static ngx_int_t
 ngx_http_core_regex_location(ngx_conf_t *cf, ngx_http_core_loc_conf_t *clcf,
     ngx_str_t *regex, ngx_uint_t caseless)
@@ -3649,17 +3655,17 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_uint_t              n;
     ngx_http_listen_opt_t   lsopt;
 
-    cscf->listen = 1;
+    cscf->listen = 1;//标记有监听信息
 
     value = cf->args->elts;
 
     ngx_memzero(&u, sizeof(ngx_url_t));
 
-    u.url = value[1];
+    u.url = value[1];//url指向listen的配置信息
     u.listen = 1;
     u.default_port = 80;
 
-    if (ngx_parse_url(cf->pool, &u) != NGX_OK) {
+    if (ngx_parse_url(cf->pool, &u) != NGX_OK) {//解析url字符串
         if (u.err) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "%s in \"%V\" of the \"listen\" directive",
@@ -3687,7 +3693,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     for (n = 2; n < cf->args->nelts; n++) {
 
-        if (ngx_strcmp(value[n].data, "default_server") == 0
+        if (ngx_strcmp(value[n].data, "default_server") == 0//设置默认server项
             || ngx_strcmp(value[n].data, "default") == 0)
         {
             lsopt.default_server = 1;
@@ -3713,7 +3719,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             continue;
         }
 #endif
-        if (ngx_strncmp(value[n].data, "backlog=", 8) == 0) {
+        if (ngx_strncmp(value[n].data, "backlog=", 8) == 0) {//设置accept队列的大小
             lsopt.backlog = ngx_atoi(value[n].data + 8, value[n].len - 8);
             lsopt.set = 1;
             lsopt.bind = 1;
@@ -3727,7 +3733,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             continue;
         }
 
-        if (ngx_strncmp(value[n].data, "rcvbuf=", 7) == 0) {
+        if (ngx_strncmp(value[n].data, "rcvbuf=", 7) == 0) {//设置接收缓冲区的大小
             size.len = value[n].len - 7;
             size.data = value[n].data + 7;
 
@@ -3744,7 +3750,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             continue;
         }
 
-        if (ngx_strncmp(value[n].data, "sndbuf=", 7) == 0) {
+        if (ngx_strncmp(value[n].data, "sndbuf=", 7) == 0) {//设置发送缓冲区的大小
             size.len = value[n].len - 7;
             size.data = value[n].data + 7;
 
@@ -3844,7 +3850,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    if (ngx_http_add_listen(cf, cscf, &lsopt) == NGX_OK) {
+    if (ngx_http_add_listen(cf, cscf, &lsopt) == NGX_OK) {//添加监听信息
         return NGX_CONF_OK;
     }
 

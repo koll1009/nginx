@@ -81,7 +81,7 @@ typedef struct {
     ngx_str_t                 uri;//请求path字符串
 
     in_port_t                 port;//端口号
-    in_port_t                 default_port;
+    in_port_t                 default_port;//默认端口号
     int                       family;//协议族
 
     unsigned                  listen:1;
@@ -90,7 +90,7 @@ typedef struct {
     unsigned                  one_addr:1;//标志位，只取一个host对应的ip地址
 
     unsigned                  no_port:1;
-    unsigned                  wildcard:1;
+    unsigned                  wildcard:1;//通配符标记
 
     socklen_t                 socklen;//sockaddr字段使用的长度
     u_char                    sockaddr[NGX_SOCKADDRLEN];//用来存储socket地址

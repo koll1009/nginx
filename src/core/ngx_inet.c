@@ -527,7 +527,7 @@ ngx_parse_url(ngx_pool_t *pool, ngx_url_t *u)
     }
 
     if (p[0] == '[') {
-        return ngx_parse_inet6_url(pool, u);
+        return ngx_parse_inet6_url(pool, u);//ip6地址解析
     }
 
     return ngx_parse_inet_url(pool, u);//ip4地址解析
@@ -648,7 +648,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
     }
 
     if (uri) {
-        if (u->listen || !u->uri_part) {
+        if (u->listen || !u->uri_part) {//如果url代表监听地址，只包含ip:port，不会有uri项
             u->err = "invalid host";
             return NGX_ERROR;
         }
@@ -663,7 +663,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         }
     }
 
-    if (port) {
+    if (port) {//ip:port格式
         port++;
 
         len = last - port;
@@ -717,10 +717,10 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
             }
         }
 
-        u->no_port = 1;//说明没有端口号
+        u->no_port = 1;//只有ip的形式
     }
 
-    len = last - host;
+    len = last - host;//主机或者ip长度
 
     if (len == 0) {
         u->err = "no host";
@@ -738,7 +738,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         return NGX_OK;
     }
 
-    if (len) {
+    if (len) {//说明url里包含host项
         sin->sin_addr.s_addr = ngx_inet_addr(host, len);//把地址字符串转换成numberic addr；地址字符串可能是192.168...类型也可能是域名或者服务器名类型
 
         if (sin->sin_addr.s_addr == INADDR_NONE) {//说明是服务器名类型
@@ -749,7 +749,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
 
             (void) ngx_cpystrn(p, host, len);
 
-            h = gethostbyname((const char *) p);
+            h = gethostbyname((const char *) p);//通过主机名获取ip地址
 
             ngx_free(p);
 
@@ -775,7 +775,7 @@ ngx_parse_inet_url(ngx_pool_t *pool, ngx_url_t *u)
         sin->sin_port = htons(u->default_port);
     }
 
-    if (u->listen) {
+    if (u->listen) {//如果是监听地址，则解析已经完成
         return NGX_OK;
     }
 
@@ -896,7 +896,7 @@ ngx_parse_inet6_url(ngx_pool_t *pool, ngx_url_t *u)
 #endif
 }
 
-
+//ip4主机解析
 ngx_int_t
 ngx_inet_resolve_host(ngx_pool_t *pool, ngx_url_t *u)
 {

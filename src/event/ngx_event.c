@@ -50,10 +50,10 @@ ngx_atomic_t         *ngx_connection_counter = &connection_counter;
 
 ngx_atomic_t         *ngx_accept_mutex_ptr;
 ngx_shmtx_t           ngx_accept_mutex;
-ngx_uint_t            ngx_use_accept_mutex;
+ngx_uint_t            ngx_use_accept_mutex;//是否启用负载均衡锁的标志
 ngx_uint_t            ngx_accept_events;
 ngx_uint_t            ngx_accept_mutex_held;
-ngx_msec_t            ngx_accept_mutex_delay;
+ngx_msec_t            ngx_accept_mutex_delay;//负载均衡锁会让有些worker进程拿不到锁时延迟建立新连接，该字段为延迟时间
 ngx_int_t             ngx_accept_disabled;
 ngx_file_t            ngx_accept_mutex_lock_file;
 
@@ -218,9 +218,9 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
 
 #endif
     }
-
+	//
     if (ngx_use_accept_mutex) {
-        if (ngx_accept_disabled > 0) {
+        if (ngx_accept_disabled > 0) {//此时说明work进程已经非常忙碌，不再接收新的连接
             ngx_accept_disabled--;
 
         } else {
@@ -228,10 +228,10 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
                 return;
             }
 
-            if (ngx_accept_mutex_held) {
+            if (ngx_accept_mutex_held) {//此标志为1表示进程已经取得了accept锁，所以可以接收连接请求，
                 flags |= NGX_POST_EVENTS;
 
-            } else {
+            } else {//进程没有取得accept锁，把epoll_wait的最长等待时间设为accept的延迟时间
                 if (timer == NGX_TIMER_INFINITE
                     || timer > ngx_accept_mutex_delay)
                 {
@@ -241,15 +241,16 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
         }
     }
 
-    delta = ngx_current_msec;
+    delta = ngx_current_msec;//当前时间
 
     (void) ngx_process_events(cycle, timer, flags);
 
-    delta = ngx_current_msec - delta;
+    delta = ngx_current_msec - delta;//执行过事件处理后的时间间隔
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "timer delta: %M", delta);
 
+	/* 依次处理新连接post队列中的事件 */
     if (ngx_posted_accept_events) {
         ngx_event_process_posted(cycle, &ngx_posted_accept_events);
     }
@@ -258,7 +259,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
         ngx_shmtx_unlock(&ngx_accept_mutex);
     }
 
-    if (delta) {
+    if (delta) {//执行定时器事件
         ngx_event_expire_timers();
     }
 
@@ -453,7 +454,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
 
     ccf = (ngx_core_conf_t *) ngx_get_conf(cycle->conf_ctx, ngx_core_module);
 
-    ngx_timer_resolution = ccf->timer_resolution;//时间精度控制项 
+    ngx_timer_resolution = ccf->timer_resolution;//设置时间精度控制项 
 
 #if !(NGX_WIN32)
     {
@@ -526,7 +527,7 @@ ngx_event_module_init(ngx_cycle_t *cycle)
     ngx_accept_mutex_ptr = (ngx_atomic_t *) shared;
     ngx_accept_mutex.spin = (ngx_uint_t) -1;
 
-    if (ngx_shmtx_create(&ngx_accept_mutex, shared, cycle->lock_file.data)
+    if (ngx_shmtx_create(&ngx_accept_mutex, shared, cycle->lock_file.data)//创建进程间互斥锁，基于共享内存
         != NGX_OK)
     {
         return NGX_ERROR;
@@ -563,9 +564,11 @@ ngx_event_module_init(ngx_cycle_t *cycle)
 
 #if !(NGX_WIN32)
 
+/* 定时器信号处理函数 */
 void
 ngx_timer_signal_handler(int signo)
 {
+	/* 每间隔ngx_timer_resolution时间，发送一个定时器信号，收到信号后执行该函数，会把ngx_event_timer_alarm置为1， */
     ngx_event_timer_alarm = 1;
 
 #if 1
@@ -637,7 +640,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         struct itimerval  itv;
 
         ngx_memzero(&sa, sizeof(struct sigaction));
-        sa.sa_handler = ngx_timer_signal_handler;
+        sa.sa_handler = ngx_timer_signal_handler;//定时器信号的处理函数
         sigemptyset(&sa.sa_mask);
 
         if (sigaction(SIGALRM, &sa, NULL) == -1) {//设置SIGALRM信号处理函数
@@ -646,6 +649,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             return NGX_ERROR;
         }
 
+		/* 设置定时器的执行间隔 */
         itv.it_interval.tv_sec = ngx_timer_resolution / 1000;
         itv.it_interval.tv_usec = (ngx_timer_resolution % 1000) * 1000;
         itv.it_value.tv_sec = ngx_timer_resolution / 1000;
@@ -935,7 +939,7 @@ ngx_events_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     cf->module_type = NGX_EVENT_MODULE;
     cf->cmd_type = NGX_EVENT_CONF;
 
-    rv = ngx_conf_parse(cf, NULL);
+    rv = ngx_conf_parse(cf, NULL);//解析event{}里的配置项
 
     *cf = pcf;
 
@@ -992,7 +996,7 @@ ngx_event_connections(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/* event{}配置项种use字段的解析，use后跟着事件模块名 */
 static char *
 ngx_event_use(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1003,7 +1007,7 @@ ngx_event_use(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_event_conf_t     *old_ecf;
     ngx_event_module_t   *module;
 
-    if (ecf->use != NGX_CONF_UNSET_UINT) {
+    if (ecf->use != NGX_CONF_UNSET_UINT) {//重复配置
         return "is duplicate";
     }
 
@@ -1024,7 +1028,7 @@ ngx_event_use(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         module = ngx_modules[m]->ctx;
         if (module->name->len == value[1].len) {
-            if (ngx_strcmp(module->name->data, value[1].data) == 0) {
+            if (ngx_strcmp(module->name->data, value[1].data) == 0) {//根据事件名搜索匹配的事件
                 ecf->use = ngx_modules[m]->ctx_index;
                 ecf->name = module->name->data;
 
@@ -1122,7 +1126,7 @@ ngx_event_debug_connection(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
-/* event core module配置上下文创建 */
+/* event_core_module模块的配置上下文创建 */
 static void *
 ngx_event_create_conf(ngx_cycle_t *cycle)
 {
@@ -1153,7 +1157,7 @@ ngx_event_create_conf(ngx_cycle_t *cycle)
     return ecf;
 }
 
-
+/* 初始化ngx_event_core_module的配置信息 */
 static char *
 ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
 {
@@ -1247,12 +1251,12 @@ ngx_event_init_conf(ngx_cycle_t *cycle, void *conf)
 
     ngx_conf_init_uint_value(ecf->use, module->ctx_index);
 
-    event_module = module->ctx;
+    event_module = module->ctx;//确定使用的事件模块
     ngx_conf_init_ptr_value(ecf->name, event_module->name->data);
 
     ngx_conf_init_value(ecf->multi_accept, 0);
     ngx_conf_init_value(ecf->accept_mutex, 1);
-    ngx_conf_init_msec_value(ecf->accept_mutex_delay, 500);
+    ngx_conf_init_msec_value(ecf->accept_mutex_delay, 500);//默认延迟500ms
 
 
 #if (NGX_HAVE_RTSIG)

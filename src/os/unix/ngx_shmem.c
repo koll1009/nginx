@@ -11,6 +11,7 @@
 
 #if (NGX_HAVE_MAP_ANON)
 
+/* 创建共享内存，使用的内存映射的方式 */
 ngx_int_t
 ngx_shm_alloc(ngx_shm_t *shm)
 {

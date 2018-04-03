@@ -295,11 +295,12 @@ ngx_event_accept(ngx_event_t *ev)
 ngx_int_t
 ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
 {
-    if (ngx_shmtx_trylock(&ngx_accept_mutex)) {
+    if (ngx_shmtx_trylock(&ngx_accept_mutex)) {//成功拿到互斥锁
 
         ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                        "accept mutex locked");
 
+		/* 说明进程已经获得过锁，而且把监听事件激活了，不需要做额外处理，直接返回 */
         if (ngx_accept_mutex_held
             && ngx_accept_events == 0
             && !(ngx_event_flags & NGX_USE_RTSIG_EVENT))
@@ -307,11 +308,12 @@ ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
             return NGX_OK;
         }
 
-        if (ngx_enable_accept_events(cycle) == NGX_ERROR) {
+        if (ngx_enable_accept_events(cycle) == NGX_ERROR) {//激活事件监听操作
             ngx_shmtx_unlock(&ngx_accept_mutex);
             return NGX_ERROR;
         }
 
+		/* 设置标志位 */
         ngx_accept_events = 0;
         ngx_accept_mutex_held = 1;
 
@@ -321,7 +323,7 @@ ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
                    "accept mutex lock failed: %ui", ngx_accept_mutex_held);
 
-    if (ngx_accept_mutex_held) {
+    if (ngx_accept_mutex_held) {//没有获得互斥锁，但标志位为1，说明激活过监听事件，需要disable掉。
         if (ngx_disable_accept_events(cycle) == NGX_ERROR) {
             return NGX_ERROR;
         }
@@ -333,6 +335,7 @@ ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
 }
 
 
+/* 激活本进程的监听事件 */
 static ngx_int_t
 ngx_enable_accept_events(ngx_cycle_t *cycle)
 {
@@ -341,7 +344,7 @@ ngx_enable_accept_events(ngx_cycle_t *cycle)
     ngx_connection_t  *c;
 
     ls = cycle->listening.elts;
-    for (i = 0; i < cycle->listening.nelts; i++) {
+    for (i = 0; i < cycle->listening.nelts; i++) {//遍历监听数组，依次添加到epoll中
 
         c = ls[i].connection;
 

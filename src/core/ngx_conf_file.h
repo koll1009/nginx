@@ -123,7 +123,7 @@ struct ngx_module_s {
 
     void                 *ctx; //指向具体模块类型的上下文结构体，例如NGX_CORE_MODULE指向ngx_core_module_t
     ngx_command_t        *commands;//处理nginx.conf配置文件的命令
-    ngx_uint_t            type;//模块类型
+    ngx_uint_t            type;//模块类型，
 
     ngx_int_t           (*init_master)(ngx_log_t *log);//未用
 
@@ -146,11 +146,11 @@ struct ngx_module_s {
     uintptr_t             spare_hook7;
 };
 
-/* NGX_CORE_MODULE类型的上下文结构体 */
+/* 核心模块(NGX_CORE_MODULE类型)的上下文结构体 */
 typedef struct {
     ngx_str_t             name;//模块名
-    void               *(*create_conf)(ngx_cycle_t *cycle);
-    char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);
+    void               *(*create_conf)(ngx_cycle_t *cycle);//创建模块的配置上下文结构体
+    char               *(*init_conf)(ngx_cycle_t *cycle, void *conf);//初始化模块的配置上下文结构体
 } ngx_core_module_t;
 
 /* 配置文件结构体 */

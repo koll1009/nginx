@@ -387,10 +387,10 @@ ngx_conf_handler(ngx_conf_t *cf, ngx_int_t last)
                 conf = &(((void **) cf->ctx)[ngx_modules[i]->index]);
 
             } else if (cf->ctx) {//event http等类型的从配置上下文赋值
-                confp = *(void **) ((char *) cf->ctx + cmd->conf);
+                confp = *(void **) ((char *) cf->ctx + cmd->conf);//选取main server loc级别的配置级别
 
                 if (confp) {
-                    conf = confp[ngx_modules[i]->ctx_index];
+                    conf = confp[ngx_modules[i]->ctx_index];//取该级别下的配置上下文
                 }
             }
 

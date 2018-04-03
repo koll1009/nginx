@@ -11,7 +11,7 @@
 
 #if (NGX_HAVE_ATOMIC_OPS)
 
-
+/* 创建互斥锁，addr指向共享内存地址，从而实现进程间共享变量 */
 ngx_int_t
 ngx_shmtx_create(ngx_shmtx_t *mtx, void *addr, u_char *name)
 {
@@ -54,6 +54,7 @@ ngx_shmtx_destory(ngx_shmtx_t *mtx)
 }
 
 
+/* 尝试获取互拆锁，成功return true，否则返回false */
 ngx_uint_t
 ngx_shmtx_trylock(ngx_shmtx_t *mtx)
 {
@@ -65,7 +66,7 @@ ngx_shmtx_trylock(ngx_shmtx_t *mtx)
             && ngx_atomic_cmp_set(mtx->lock, val, val | 0x80000000));
 }
 
-
+/* 互斥锁lock操作 */
 void
 ngx_shmtx_lock(ngx_shmtx_t *mtx)
 {
@@ -78,17 +79,17 @@ ngx_shmtx_lock(ngx_shmtx_t *mtx)
 
         val = *mtx->lock;
 
-        if ((val & 0x80000000) == 0
-            && ngx_atomic_cmp_set(mtx->lock, val, val | 0x80000000))
+        if ((val & 0x80000000) == 0//执行两次判断，是因为第一个条件通过后存在其他进程获取到锁的可能性
+            && ngx_atomic_cmp_set(mtx->lock, val, val | 0x80000000))//获得锁，则返回，此时lock高位会置1
         {
             return;
         }
 
-        if (ngx_ncpu > 1) {
+        if (ngx_ncpu > 1) {//执行一段空操作，并再次尝试获取锁
 
             for (n = 1; n < mtx->spin; n <<= 1) {
 
-                for (i = 0; i < n; i++) {
+                for (i = 0; i < n; i++) {//cpu执行空操作，然后等待再次尝试拿锁
                     ngx_cpu_pause();
                 }
 
@@ -107,13 +108,13 @@ ngx_shmtx_lock(ngx_shmtx_t *mtx)
         if (mtx->semaphore) {
             val = *mtx->lock;
 
-            if ((val & 0x80000000)
+            if ((val & 0x80000000)//锁仍然没有被释放
                 && ngx_atomic_cmp_set(mtx->lock, val, val + 1))
             {
                 ngx_log_debug1(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
                                "shmtx wait %XA", val);
 
-                while (sem_wait(&mtx->sem) == -1) {
+                while (sem_wait(&mtx->sem) == -1) {//执行信号等待
                     ngx_err_t  err;
 
                     err = ngx_errno;
@@ -138,7 +139,7 @@ ngx_shmtx_lock(ngx_shmtx_t *mtx)
     }
 }
 
-
+/* 互拆锁unlock操作 */
 void
 ngx_shmtx_unlock(ngx_shmtx_t *mtx)
 {
@@ -152,9 +153,9 @@ ngx_shmtx_unlock(ngx_shmtx_t *mtx)
 
         old = *mtx->lock;
         wait = old & 0x7fffffff;
-        val = wait ? wait - 1 : 0;
+        val = wait ? wait - 1 : 0;//根据是否有信号等待
 
-        if (ngx_atomic_cmp_set(mtx->lock, old, val)) {
+        if (ngx_atomic_cmp_set(mtx->lock, old, val)) {//把值还原
             break;
         }
     }
@@ -168,7 +169,7 @@ ngx_shmtx_unlock(ngx_shmtx_t *mtx)
     ngx_log_debug1(NGX_LOG_DEBUG_CORE, ngx_cycle->log, 0,
                    "shmtx wake %XA", old);
 
-    if (sem_post(&mtx->sem) == -1) {
+    if (sem_post(&mtx->sem) == -1) {//激活信号等待的进程
         ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, ngx_errno,
                       "sem_post() failed while wake shmtx");
     }
