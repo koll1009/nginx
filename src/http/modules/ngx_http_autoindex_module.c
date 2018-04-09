@@ -681,7 +681,7 @@ ngx_http_autoindex_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     return NGX_CONF_OK;
 }
 
-
+//
 static ngx_int_t
 ngx_http_autoindex_init(ngx_conf_t *cf)
 {
@@ -695,7 +695,7 @@ ngx_http_autoindex_init(ngx_conf_t *cf)
         return NGX_ERROR;
     }
 
-    *h = ngx_http_autoindex_handler;
+    *h = ngx_http_autoindex_handler;//添加autoindex模块的处理函数
 
     return NGX_OK;
 }

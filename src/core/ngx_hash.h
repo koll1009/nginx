@@ -81,10 +81,10 @@ typedef struct {
     ngx_pool_t       *temp_pool;
 
     ngx_array_t       keys;//不带通配符的哈希结点数组
-    ngx_array_t      *keys_hash;//用来暂存哈希节点，为了快速检索重复项，使用哈希技术
+    ngx_array_t      *keys_hash;//用来暂存不带通配符的哈希结点，用于快速检索重复项
 
-    ngx_array_t       dns_wc_head;
-    ngx_array_t      *dns_wc_head_hash;
+    ngx_array_t       dns_wc_head;//带前置通配符的哈希结点数组
+    ngx_array_t      *dns_wc_head_hash;//
 
     ngx_array_t       dns_wc_tail;
     ngx_array_t      *dns_wc_tail_hash;

@@ -3700,7 +3700,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             continue;
         }
 
-        if (ngx_strcmp(value[n].data, "bind") == 0) {
+        if (ngx_strcmp(value[n].data, "bind") == 0) {//显示绑定标志
             lsopt.set = 1;
             lsopt.bind = 1;
             continue;

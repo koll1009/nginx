@@ -71,7 +71,7 @@ typedef struct {
     unsigned                   set:1;
     unsigned                   default_server:1;
     unsigned                   bind:1;
-    unsigned                   wildcard:1;
+    unsigned                   wildcard:1;//监听项里的通配符表示的是任意本机ip+端口
 #if (NGX_HTTP_SSL)
     unsigned                   ssl:1;
 #endif
@@ -102,16 +102,19 @@ typedef enum {
 
     NGX_HTTP_SERVER_REWRITE_PHASE,//将请求的uri与location匹配前，修改请求的uri(重定向）
 
-    NGX_HTTP_FIND_CONFIG_PHASE, //请求的uri匹配，只能由ngx_http_core_module实现
+    NGX_HTTP_FIND_CONFIG_PHASE, //根据请求的uri寻找匹配的location，只能由ngx_http_core_module实现
     NGX_HTTP_REWRITE_PHASE,//找到匹配的location后再修改请求的uri
 
-    NGX_HTTP_POST_REWRITE_PHASE,//这一阶段用于rewrite url后，防止错误的配置导致循环修改uri导致的死循环
+    NGX_HTTP_POST_REWRITE_PHASE,//这一阶段用于rewrite url后，防止错误的配置导致循环修改uri导致的死循环，由ngx_http_core_module实现
 
     NGX_HTTP_PREACCESS_PHASE,//在处理NGX_HTTP_ACCESS_PHASE阶段决定请求的访问权限前，http模块可以介入的阶段
 
     NGX_HTTP_ACCESS_PHASE,//请求的访问权限处理阶段
+
+	/* 在NGX_HTTP_ACCESS_PHASE阶段中，当http模块的handler返回不允许访问的错误码时，这里将负责向用户发送拒绝服务的错误相应，由ngx_http_core_module实现 */
     NGX_HTTP_POST_ACCESS_PHASE,
 
+	/* 为try_files配置项设立，当http请求访问静态资源文件时，try_files配置项可以使这个请求顺序访问多个静态资源文件。由ngx_http_core_module实现 */
     NGX_HTTP_TRY_FILES_PHASE,
     NGX_HTTP_CONTENT_PHASE,//处理http请求的内容阶段
 

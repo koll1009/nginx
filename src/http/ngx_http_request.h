@@ -154,7 +154,7 @@ typedef enum {
 
 /* http headerÃèÊö·û */
 typedef struct {
-    ngx_str_t                         name;
+    ngx_str_t                         name;//headerÃû
     ngx_uint_t                        offset;
     ngx_http_header_handler_pt        handler;
 } ngx_http_header_t;

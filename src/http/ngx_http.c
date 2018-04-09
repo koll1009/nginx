@@ -292,21 +292,21 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        if (ngx_http_init_static_location_trees(cf, clcf) != NGX_OK) {
+        if (ngx_http_init_static_location_trees(cf, clcf) != NGX_OK) {//生成server下的location静态树
             return NGX_CONF_ERROR;
         }
     }
 
 
-    if (ngx_http_init_phases(cf, cmcf) != NGX_OK) {//各处理阶段初始化
+    if (ngx_http_init_phases(cf, cmcf) != NGX_OK) {//依次初始化11个http处理阶段的handler数组
         return NGX_CONF_ERROR;
     }
 
-    if (ngx_http_init_headers_in_hash(cf, cmcf) != NGX_OK) {//初始化http header
+    if (ngx_http_init_headers_in_hash(cf, cmcf) != NGX_OK) {//初始化http header的哈希表
         return NGX_CONF_ERROR;
     }
 
-	/* 依次调用各http模块的postconfiguration函数 */
+	/* 依次调用各http模块的postconfiguration函数，该函数用于各模块注册phase handler */
     for (m = 0; ngx_modules[m]; m++) {
         if (ngx_modules[m]->type != NGX_HTTP_MODULE) {
             continue;
@@ -321,7 +321,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
-    if (ngx_http_variables_init_vars(cf) != NGX_OK) {
+    if (ngx_http_variables_init_vars(cf) != NGX_OK) {//初始化内置变量
         return NGX_CONF_ERROR;
     }
 
@@ -333,7 +333,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     *cf = pcf;
 
 
-    if (ngx_http_init_phase_handlers(cf, cmcf) != NGX_OK) {
+    if (ngx_http_init_phase_handlers(cf, cmcf) != NGX_OK) {//初始化各模块的处理函数
         return NGX_CONF_ERROR;
     }
 
@@ -495,7 +495,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 
         case NGX_HTTP_SERVER_REWRITE_PHASE:
             if (cmcf->phase_engine.server_rewrite_index == (ngx_uint_t) -1) {
-                cmcf->phase_engine.server_rewrite_index = n;
+                cmcf->phase_engine.server_rewrite_index = n;//设置为该phase第一个handler的索引
             }
             checker = ngx_http_core_rewrite_phase;
 
@@ -521,7 +521,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         case NGX_HTTP_POST_REWRITE_PHASE:
             if (use_rewrite) {
                 ph->checker = ngx_http_core_post_rewrite_phase;
-                ph->next = find_config_index;
+                ph->next = find_config_index;//重定向后，会再次回到uri匹配阶段
                 n++;
                 ph++;
             }
@@ -564,7 +564,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         for (j = cmcf->phases[i].handlers.nelts - 1; j >=0; j--) {
             ph->checker = checker;
             ph->handler = h[j];
-            ph->next = n;
+            ph->next = n;//设置下一阶段的索引
             ph++;
         }
     }
@@ -1298,7 +1298,7 @@ ngx_http_add_addresses(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         }
 
         /* preserve default_server bit during listen options overwriting */
-        default_server = addr[i].opt.default_server;
+        default_server = addr[i].opt.default_server;//预保留
 
 #if (NGX_HTTP_SSL)
         ssl = lsopt->ssl || addr[i].opt.ssl;
@@ -1449,7 +1449,7 @@ ngx_http_optimize_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
         addr = port[p].addrs.elts;
         for (a = 0; a < port[p].addrs.nelts; a++) {//依次遍历该端口下各地址
 
-            if (addr[a].servers.nelts > 1
+            if (addr[a].servers.nelts > 1//对于一个ip:port有多个server{}配置项
 #if (NGX_PCRE)
                 || addr[a].default_server->captures
 #endif

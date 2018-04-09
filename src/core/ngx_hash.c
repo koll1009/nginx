@@ -101,11 +101,11 @@ ngx_hash_find_wc_head(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
 
         if ((uintptr_t) value & 2) {
 
-            if (n == 0) {//n为0，表示没有'.'分隔符
+            if (n == 0) {//n为0，表示最后一个分节
 
                 /* "example.com" */
 
-                if ((uintptr_t) value & 1) {
+                if ((uintptr_t) value & 1) {//不支持.example.com形式
                     return NULL;
                 }
 
@@ -166,7 +166,7 @@ ngx_hash_find_wc_tail(ngx_hash_wildcard_t *hwc, u_char *name, size_t len)
         key = ngx_hash(key, name[i]);
     }
 
-    if (i == len) {/* 忽略最后一个关键字 */
+    if (i == len) {/* 因为是搜索匹配的末端通配符字符串，所以最后一个分节字符串忽略掉 */
         return NULL;
     }
 
@@ -555,13 +555,13 @@ ngx_hash_wildcard_init(ngx_hash_init_t *hinit, ngx_hash_key_t *names,
 
 		
         for (i = n + 1; i < nelts; i++) {
-            if (ngx_strncmp(names[n].key.data, names[i].key.data, len) != 0) {
+            if (ngx_strncmp(names[n].key.data, names[i].key.data, len) != 0) {//有相同的分节点，例如a.b and a.c都有a.分节
                 break;
             }
 
             if (!dot
                 && names[i].key.len > len
-                && names[i].key.data[len] != '.')
+                && names[i].key.data[len] != '.')//如果cur为最后一个分节，要排除字符包含的问题
             {
                 break;
             }
@@ -784,8 +784,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
         }
     }
 
-    /* exact hash */
-
+    /* exact hash 没有通配符的添加哈希节点 */
     k = 0;
 
 	/* 计算哈希值 */
@@ -802,6 +801,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
 
     name = ha->keys_hash[k].elts;
 
+	/* 碰撞检测 */
     if (name) {
         for (i = 0; i < ha->keys_hash[k].nelts; i++) {
             if (last != name[i].len) {
@@ -908,7 +908,7 @@ wildcard:
         len = 0;
         n = 0;
 
-        for (i = last - 1; i; i--) {
+        for (i = last - 1; i; i--) {//把域名串反转
             if (key->data[i] == '.') {
                 ngx_memcpy(&p[n], &key->data[i + 1], len);
                 n += len;
