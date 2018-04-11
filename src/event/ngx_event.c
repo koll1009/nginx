@@ -681,7 +681,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
 #endif
 
-	/* 根据每个进程设置的连接上线，预分配ngx_connection_t以及读写事件的内存 */
+	/* 根据每个进程设置的连接数，预分配ngx_connection_t以及读写事件的内存 */
     cycle->connections =
         ngx_alloc(sizeof(ngx_connection_t) * cycle->connection_n, cycle->log);
     if (cycle->connections == NULL) {
@@ -723,7 +723,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
     i = cycle->connection_n;
     next = NULL;
-
+	/* 把连接和读写事件一一关联，并且串联起来 */
     do {
         i--;
 
@@ -739,7 +739,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #endif
     } while (i);
 
-    cycle->free_connections = next;
+    cycle->free_connections = next;//空闲连接链表
     cycle->free_connection_n = cycle->connection_n;
 
     /* for each listening socket */
@@ -762,7 +762,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
         rev = c->read;
 
         rev->log = c->log;
-        rev->accept = 1;
+        rev->accept = 1;//监听的读事件即为accept，所以设置标志位
 
 #if (NGX_HAVE_DEFERRED_ACCEPT)
         rev->deferred_accept = ls[i].deferred_accept;
@@ -828,7 +828,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 
         rev->handler = ngx_event_accept;//监听socket的读事件函数，即处理用来accept客户端连接
 
-        if (ngx_use_accept_mutex) {
+        if (ngx_use_accept_mutex) {//使用accept锁来解决惊群，会在获得锁的进程中把监听socket添加到epoll中，所以不需要执行下面的添加操作
             continue;
         }
 

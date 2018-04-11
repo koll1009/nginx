@@ -101,6 +101,7 @@ static uint32_t  usual[] = {
 
 /* gcc, icc, msvc and others compile these switches as an jump table */
 
+/* 解析请求行 */
 ngx_int_t
 ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
 {
@@ -147,19 +148,19 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                 break;
             }
 
-            if ((ch < 'A' || ch > 'Z') && ch != '_') {
+            if ((ch < 'A' || ch > 'Z') && ch != '_') {//非法字符
                 return NGX_HTTP_PARSE_INVALID_METHOD;
             }
 
             state = sw_method;
             break;
 
-        case sw_method://http method解析
+        case sw_method://http method解析，会跳过字母字符直到解析到空格，此时说明method已经完整
             if (ch == ' ') {
                 r->method_end = p - 1;
                 m = r->request_start;
 
-                switch (p - m) {
+                switch (p - m) {//解析method的具体方法
 
                 case 3:
                     if (ngx_str3_cmp(m, 'G', 'E', 'T', ' ')) {//get方法
@@ -261,7 +262,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                     break;
                 }
 
-                state = sw_spaces_before_uri;
+                state = sw_spaces_before_uri;//跳转到解析uri
                 break;
             }
 

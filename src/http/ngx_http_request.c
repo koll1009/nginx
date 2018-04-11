@@ -179,7 +179,7 @@ ngx_http_header_t  ngx_http_headers_in[] = {
 };
 
 
-/* ngx_listening_t的handler方法 */
+/* ngx_listening_t的handler方法，每当accept一条客户端连接后调用 */
 void
 ngx_http_init_connection(ngx_connection_t *c)
 {
@@ -235,7 +235,7 @@ ngx_http_init_connection(ngx_connection_t *c)
 }
 
 
-/* 第一次可读事件的处理 */
+/* 接收到的客户端socket的第一次可读事件的处理 */
 static void
 ngx_http_init_request(ngx_event_t *rev)
 {
@@ -244,10 +244,10 @@ ngx_http_init_request(ngx_event_t *rev)
     ngx_connection_t           *c;
     ngx_http_request_t         *r;
     struct sockaddr_in         *sin;
-    ngx_http_port_t            *port;
+    ngx_http_port_t            *port;//接收到连接的端口地址
     ngx_http_in_addr_t         *addr;
     ngx_http_log_ctx_t         *ctx;
-    ngx_http_addr_conf_t       *addr_conf;
+    ngx_http_addr_conf_t       *addr_conf;//接收到连接的ip地址
     ngx_http_connection_t      *hc;
     ngx_http_core_srv_conf_t   *cscf;
     ngx_http_core_loc_conf_t   *clcf;
@@ -315,6 +315,7 @@ ngx_http_init_request(ngx_event_t *rev)
 
     r->connection = c;
 
+	/* 根据监听地址的端口号和ip地址取合适的server{}配置项以及服务器名 */
     if (port->naddrs > 1) {
 
         /*
@@ -390,7 +391,7 @@ ngx_http_init_request(ngx_event_t *rev)
     /* the default server configuration for the address:port */
     cscf = addr_conf->default_server;
 
-    r->main_conf = cscf->ctx->main_conf;
+    r->main_conf = cscf->ctx->main_conf;//请求对应的main、server、location三个级别配置项
     r->srv_conf = cscf->ctx->srv_conf;
     r->loc_conf = cscf->ctx->loc_conf;
 
@@ -439,7 +440,7 @@ ngx_http_init_request(ngx_event_t *rev)
         c->log->log_level = clcf->error_log->log_level;
     }
 
-    if (c->buffer == NULL) {
+    if (c->buffer == NULL) {//创建缓冲区
         c->buffer = ngx_create_temp_buf(c->pool,
                                         cscf->client_header_buffer_size);
         if (c->buffer == NULL) {
@@ -478,7 +479,7 @@ ngx_http_init_request(ngx_event_t *rev)
     cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
     r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts
-                                        * sizeof(ngx_http_variable_value_t));
+                                        * sizeof(ngx_http_variable_value_t));//为内置变量分配空间
     if (r->variables == NULL) {
         ngx_destroy_pool(r->pool);
         ngx_http_close_connection(c);
@@ -518,7 +519,7 @@ ngx_http_init_request(ngx_event_t *rev)
     (void) ngx_atomic_fetch_add(ngx_stat_requests, 1);
 #endif
 
-    rev->handler(rev);
+    rev->handler(rev);//调用ngx_http_process_request_line函数处理http协议中的请求行部分
 }
 
 
@@ -742,7 +743,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
 
         rc = ngx_http_parse_request_line(r, r->header_in);//解析请求行，类似GET / HTTP/1.1
 
-        if (rc == NGX_OK) {//请求行请求成功
+        if (rc == NGX_OK) {//请求行解析成功
 
             /* the request line has been parsed successfully */
 
@@ -861,7 +862,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
 
                 host = r->host_start;
                 n = ngx_http_validate_host(r, &host,
-                                           r->host_end - r->host_start, 0);
+                                           r->host_end - r->host_start, 0);//服务器验证
 
                 if (n == 0) {
                     ngx_log_error(NGX_LOG_INFO, c->log, 0,
@@ -929,11 +930,10 @@ ngx_http_process_request_line(ngx_event_t *rev)
             return;
         }
 
-        /* NGX_AGAIN: a request line parsing is still incomplete */
-
+        /* NGX_AGAIN: a request line parsing is still incomplete,说明request line没有解析完毕，有两种可能，1是读取的数据不全，2是缓存不足 */
         if (r->header_in->pos == r->header_in->end) {
 
-            rv = ngx_http_alloc_large_header_buffer(r, 1);
+            rv = ngx_http_alloc_large_header_buffer(r, 1);//缓存不足，则重新分配
 
             if (rv == NGX_ERROR) {
                 ngx_http_close_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1040,7 +1040,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
         rc = ngx_http_parse_header_line(r, r->header_in,
                                         cscf->underscores_in_headers);//解析http header
 
-        if (rc == NGX_OK) {
+        if (rc == NGX_OK) {//解析出一个header key:value对
 
             if (r->invalid_header && cscf->ignore_invalid_headers) {
 
@@ -1061,15 +1061,15 @@ ngx_http_process_request_headers(ngx_event_t *rev)
                 return;
             }
 
-            h->hash = r->header_hash;
-
+            h->hash = r->header_hash;//哈希值
+			/* http head格式 name:value */
             h->key.len = r->header_name_end - r->header_name_start;
             h->key.data = r->header_name_start;
-            h->key.data[h->key.len] = '\0';
+            h->key.data[h->key.len] = '\0';//head name
 
             h->value.len = r->header_end - r->header_start;
             h->value.data = r->header_start;
-            h->value.data[h->value.len] = '\0';
+            h->value.data[h->value.len] = '\0';//head value 
 
             h->lowcase_key = ngx_pnalloc(r->pool, h->key.len);
             if (h->lowcase_key == NULL) {
@@ -1085,9 +1085,9 @@ ngx_http_process_request_headers(ngx_event_t *rev)
             }
 
             hh = ngx_hash_find(&cmcf->headers_in_hash, h->hash,
-                               h->lowcase_key, h->key.len);
+                               h->lowcase_key, h->key.len);//从全局head哈希表中搜索
 
-            if (hh && hh->handler(r, h, hh->offset) != NGX_OK) {
+            if (hh && hh->handler(r, h, hh->offset) != NGX_OK) {//调用header对应的处理函数
                 return;
             }
 
@@ -1098,7 +1098,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
             continue;
         }
 
-        if (rc == NGX_HTTP_PARSE_HEADER_DONE) {
+        if (rc == NGX_HTTP_PARSE_HEADER_DONE) {//header解析完毕
 
             /* a whole header has been parsed successfully */
 
@@ -1109,13 +1109,13 @@ ngx_http_process_request_headers(ngx_event_t *rev)
 
             r->http_state = NGX_HTTP_PROCESS_REQUEST_STATE;
 
-            rc = ngx_http_process_request_header(r);//某些header检查
+            rc = ngx_http_process_request_header(r);//执行header检查
 
             if (rc != NGX_OK) {
                 return;
             }
 
-            ngx_http_process_request(r);
+            ngx_http_process_request(r);//请求处理
 
             return;
         }
@@ -1210,7 +1210,7 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http alloc large header buffer");
 
-    if (request_line && r->state == 0) {//说明缓存里全是/r/n字符
+    if (request_line && r->state == 0) {//说明缓存里全是/r/n字符，则重新利用该buffer
 
         /* the client fills up the buffer with "\r\n" */
 
@@ -1236,7 +1236,7 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
 
     hc = r->http_connection;
 
-    if (hc->nfree) {
+    if (hc->nfree) {//有空闲缓存
         b = hc->free[--hc->nfree];
 
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -1254,7 +1254,7 @@ ngx_http_alloc_large_header_buffer(ngx_http_request_t *r,
         }
 
         b = ngx_create_temp_buf(r->connection->pool,
-                                cscf->large_client_header_buffers.size);
+                                cscf->large_client_header_buffers.size);//新分配一个buffer
         if (b == NULL) {
             return NGX_ERROR;
         }
@@ -1389,7 +1389,7 @@ ngx_http_process_unique_header_line(ngx_http_request_t *r, ngx_table_elt_t *h,
     return NGX_ERROR;
 }
 
-
+/* http request header中的host处理函数 */
 static ngx_int_t
 ngx_http_process_host(ngx_http_request_t *r, ngx_table_elt_t *h,
     ngx_uint_t offset)
@@ -1427,6 +1427,7 @@ ngx_http_process_host(ngx_http_request_t *r, ngx_table_elt_t *h,
 }
 
 
+/* http request header中connection项的处理函数， */
 static ngx_int_t
 ngx_http_process_connection(ngx_http_request_t *r, ngx_table_elt_t *h,
     ngx_uint_t offset)
@@ -1441,7 +1442,7 @@ ngx_http_process_connection(ngx_http_request_t *r, ngx_table_elt_t *h,
     return NGX_OK;
 }
 
-
+/* http request header中user-agent项的处理函数 */
 static ngx_int_t
 ngx_http_process_user_agent(ngx_http_request_t *r, ngx_table_elt_t *h,
     ngx_uint_t offset)

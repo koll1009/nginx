@@ -31,7 +31,7 @@ struct ngx_listening_s {
     int                 sndbuf;//发送缓冲区
 
     /* handler of accepted connection */
-    ngx_connection_handler_pt   handler;
+    ngx_connection_handler_pt   handler;//accept连接后执行的操作
 
     void               *servers;  /* array of ngx_http_in_addr_t, for example */
 

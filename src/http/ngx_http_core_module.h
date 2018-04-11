@@ -263,7 +263,7 @@ typedef struct {
 
 #if (NGX_PCRE)
     ngx_uint_t                 nregex;
-    ngx_http_server_name_t    *regex;
+    ngx_http_server_name_t    *regex;//ip:port对应的server{}下server_name（正则表达式）:ngx_http_core_srv_conf_t数组
 #endif
 
     /* the default server configuration for this address:port */

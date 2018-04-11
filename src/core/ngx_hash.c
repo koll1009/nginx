@@ -736,7 +736,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
 
     last = key->len;
 
-    if (flags & NGX_HASH_WILDCARD_KEY) {
+    if (flags & NGX_HASH_WILDCARD_KEY) {//Ö§³ÖÍ¨Åä·û
 
         /*
          * supported wildcards:

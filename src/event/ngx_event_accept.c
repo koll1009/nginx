@@ -56,7 +56,7 @@ ngx_event_accept(ngx_event_t *ev)
             s = accept4(lc->fd, (struct sockaddr *) sa, &socklen,
                         SOCK_NONBLOCK);
         } else {
-            s = accept(lc->fd, (struct sockaddr *) sa, &socklen);
+            s = accept(lc->fd, (struct sockaddr *) sa, &socklen);//读取客户端socket的地址
         }
 #else
         s = accept(lc->fd, (struct sockaddr *) sa, &socklen);
@@ -105,10 +105,11 @@ ngx_event_accept(ngx_event_t *ev)
         (void) ngx_atomic_fetch_add(ngx_stat_accepted, 1);
 #endif
 
+		//接收到一个客户端连接后，计算该数，如果为负数--即7/8连接已经使用则启用进程间的负载均衡，不在接收新连接
         ngx_accept_disabled = ngx_cycle->connection_n / 8
                               - ngx_cycle->free_connection_n;
 
-        c = ngx_get_connection(s, ev->log);
+        c = ngx_get_connection(s, ev->log);//取一个空闲连接，给accept的客户端socket使用
 
         if (c == NULL) {
             if (ngx_close_socket(s) == -1) {
@@ -168,8 +169,8 @@ ngx_event_accept(ngx_event_t *ev)
 
         *log = ls->log;
 
-        c->recv = ngx_recv;
-        c->send = ngx_send;
+        c->recv = ngx_recv;//设置读socket流的函数
+        c->send = ngx_send;//设置写socket流的函数
         c->recv_chain = ngx_recv_chain;
         c->send_chain = ngx_send_chain;
 
@@ -177,7 +178,7 @@ ngx_event_accept(ngx_event_t *ev)
         c->pool->log = log;
 
         c->socklen = socklen;
-        c->listening = ls;
+        c->listening = ls;//客户端连接对应的监听对象
         c->local_sockaddr = ls->sockaddr;
 
         c->unexpected_eof = 1;
@@ -272,7 +273,7 @@ ngx_event_accept(ngx_event_t *ev)
         ngx_log_debug3(NGX_LOG_DEBUG_EVENT, log, 0,
                        "*%d accept: %V fd:%d", c->number, &c->addr_text, s);
 
-        if (ngx_add_conn && (ngx_event_flags & NGX_USE_EPOLL_EVENT) == 0) {
+        if (ngx_add_conn && (ngx_event_flags & NGX_USE_EPOLL_EVENT) == 0) {//把客户端socket添加到epoll中
             if (ngx_add_conn(c) == NGX_ERROR) {
                 ngx_close_accepted_connection(c);
                 return;
@@ -282,7 +283,7 @@ ngx_event_accept(ngx_event_t *ev)
         log->data = NULL;
         log->handler = NULL;
 
-        ls->handler(c);
+        ls->handler(c);//指向 ngx_http_init_connection，调用该函数
 
         if (ngx_event_flags & NGX_USE_KQUEUE_EVENT) {
             ev->available--;

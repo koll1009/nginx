@@ -39,7 +39,7 @@ ngx_create_listening(ngx_conf_t *cf, void *sockaddr, socklen_t socklen)
 
     ngx_memcpy(sa, sockaddr, socklen);
 
-    ls->sockaddr = sa;
+    ls->sockaddr = sa;//监听socket的地址
     ls->socklen = socklen;
 
     len = ngx_sock_ntop(sa, text, NGX_SOCKADDR_STRLEN, 1);
@@ -996,7 +996,7 @@ ngx_connection_local_sockaddr(ngx_connection_t *c, ngx_str_t *s,
         break;
     }
 
-    if (addr == 0) {
+    if (addr == 0) {//监听地址使用的0.0.0.0,则需要通过getsockname取得具体的ip：port
 
         len = NGX_SOCKADDRLEN;
 

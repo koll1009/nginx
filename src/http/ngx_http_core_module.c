@@ -827,9 +827,9 @@ ngx_http_handler(ngx_http_request_t *r)
         }
 
         r->lingering_close = (r->headers_in.content_length_n > 0);
-        r->phase_handler = 0;
+        r->phase_handler = 0;//从第一个handler开始执行
 
-    } else {
+    } else {//内部跳转时，直接从重写阶段开始执行
         cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
         r->phase_handler = cmcf->phase_engine.server_rewrite_index;
     }
@@ -842,7 +842,7 @@ ngx_http_handler(ngx_http_request_t *r)
 #endif
 
     r->write_event_handler = ngx_http_core_run_phases;
-    ngx_http_core_run_phases(r);
+    ngx_http_core_run_phases(r);//执行各阶段的hander
 }
 
 /* 执行各http phase的函数 */

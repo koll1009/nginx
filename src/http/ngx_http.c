@@ -1461,7 +1461,7 @@ ngx_http_optimize_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
             }
         }
 
-        if (ngx_http_init_listening(cf, &port[p]) != NGX_OK) {
+        if (ngx_http_init_listening(cf, &port[p]) != NGX_OK) {//初始化监听项
             return NGX_ERROR;
         }
     }
@@ -1470,7 +1470,7 @@ ngx_http_optimize_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 }
 
 
-/*  */
+/* 把地址对应的服务器名建立哈希表  */
 static ngx_int_t
 ngx_http_server_names(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
     ngx_http_conf_addr_t *addr)
@@ -1509,7 +1509,7 @@ ngx_http_server_names(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
         for (n = 0; n < cscfp[s]->server_names.nelts; n++) {
 
 #if (NGX_PCRE)
-            if (name[n].regex) {
+            if (name[n].regex) {//跳过正则表达式
                 regex++;
                 continue;
             }
@@ -1699,7 +1699,7 @@ ngx_http_init_listening(ngx_conf_t *cf, ngx_http_conf_port_t *port)
 
     while (i < last) {
 
-        if (bind_wildcard && !addr[i].opt.bind) {
+        if (bind_wildcard && !addr[i].opt.bind) {//如果该端口有统配类型并且当前地址没有显示绑定，则跳过
             i++;
             continue;
         }
@@ -1760,13 +1760,13 @@ ngx_http_add_listening(ngx_conf_t *cf, ngx_http_conf_addr_t *addr)
         return NULL;
     }
 
-    ls->addr_ntop = 1;
+    ls->addr_ntop = 1;//
 
-    ls->handler = ngx_http_init_connection;//
+    ls->handler = ngx_http_init_connection;//接收到连接请求后的处理函数
 
-    cscf = addr->default_server;
+    cscf = addr->default_server;//取默认server{}配置项
     ls->pool_size = cscf->connection_pool_size;
-    ls->post_accept_timeout = cscf->client_header_timeout;
+    ls->post_accept_timeout = cscf->client_header_timeout;//接受延迟最大值
 
     clcf = cscf->ctx->loc_conf[ngx_http_core_module.ctx_index];
 
@@ -1787,7 +1787,7 @@ ngx_http_add_listening(ngx_conf_t *cf, ngx_http_conf_addr_t *addr)
     }
 #endif
 
-    ls->backlog = addr->opt.backlog;
+    ls->backlog = addr->opt.backlog;//依次设置accept队列、接收缓冲区、发送缓冲区的大小
     ls->rcvbuf = addr->opt.rcvbuf;
     ls->sndbuf = addr->opt.sndbuf;
 

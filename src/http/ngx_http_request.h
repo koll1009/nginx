@@ -167,7 +167,7 @@ typedef struct {
 
 //http request header描述符
 typedef struct {
-    ngx_list_t                        headers;
+    ngx_list_t                        headers;//保存所有的request header
 
     ngx_table_elt_t                  *host;
     ngx_table_elt_t                  *connection;
@@ -218,11 +218,13 @@ typedef struct {
 
     ngx_array_t                       cookies;
 
-    ngx_str_t                         server;
+    ngx_str_t                         server;//head里的host value
     off_t                             content_length_n;
     time_t                            keep_alive_n;
 
-    unsigned                          connection_type:2;
+    unsigned                          connection_type:2;//http请求的连接方式，keep-live or close
+
+	/* 以下为http请求发起方的浏览器类型，ie或者chrome或者safari 。。。。 */
     unsigned                          msie:1;
     unsigned                          msie6:1;
     unsigned                          opera:1;
@@ -350,7 +352,7 @@ typedef void (*ngx_http_event_handler_pt)(ngx_http_request_t *r);
 struct ngx_http_request_s {
     uint32_t                          signature;         /* "HTTP" */
 
-    ngx_connection_t                 *connection;//请求对应的客户端连接
+    ngx_connection_t                 *connection;//请求对应的连接
 
     void                            **ctx;
     void                            **main_conf;//对应的http{}、server{}、location{}配置信息

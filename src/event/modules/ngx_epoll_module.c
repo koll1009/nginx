@@ -667,7 +667,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
                 rev->posted_ready = 1;
 
             } else {
-                rev->ready = 1;
+                rev->ready = 1;//表示可读
             }
 
             if (flags & NGX_POST_EVENTS) {//如果有延期处理标记，则依据是否为新连接事件，放到相应的post队列中

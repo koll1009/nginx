@@ -132,7 +132,7 @@ struct ngx_event_s {
 
     ngx_log_t       *log;
 
-    ngx_rbtree_node_t   timer;
+    ngx_rbtree_node_t   timer;//插入到红黑树定时器时用到的节点
 
     unsigned         closed:1;
 
