@@ -16,7 +16,7 @@
 #define NGX_IOVS  IOV_MAX
 #endif
 
-
+/*  */
 ngx_chain_t *
 ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 {
@@ -85,7 +85,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 
             size = cl->buf->last - cl->buf->pos;
 
-            if (send + size > limit) {
+            if (send + size > limit) {//write的数据超出了限制
                 size = (ssize_t) (limit - send);
             }
 
@@ -106,20 +106,20 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
             send += size;
         }
 
-        n = writev(c->fd, vec.elts, vec.nelts);
+        n = writev(c->fd, vec.elts, vec.nelts);//执行writev操作
 
         if (n == -1) {
             err = ngx_errno;
 
             switch (err) {
-            case NGX_EAGAIN:
+            case NGX_EAGAIN://函数会被阻塞，一般因为写空间不足
                 break;
 
-            case NGX_EINTR:
+            case NGX_EINTR://被信号中断
                 eintr = 1;
                 break;
 
-            default:
+            default://此时写操作出现错误
                 wev->error = 1;
                 (void) ngx_connection_error(c, err, "writev() failed");
                 return NGX_CHAIN_ERROR;
@@ -133,7 +133,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 
         ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0, "writev: %z", sent);
 
-        if (send - prev_send == sent) {
+        if (send - prev_send == sent) {//此时vec里的数据被全部write完
             complete = 1;
         }
 
@@ -158,16 +158,16 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
                 continue;
             }
 
-            cl->buf->pos += sent;
+            cl->buf->pos += sent;//算出最后一段内存已write的字节数
 
             break;
         }
 
-        if (eintr) {
+        if (eintr) {//如果发生错误，但是因为被信号中断的，继续执行
             continue;
         }
 
-        if (!complete) {
+        if (!complete) {//此时写缓存不足
             wev->ready = 0;
             return cl;
         }

@@ -272,13 +272,14 @@ typedef struct {
 
 typedef void (*ngx_http_client_body_handler_pt)(ngx_http_request_t *r);
 
+/* 保存http包体的结构体 */
 typedef struct {
-    ngx_temp_file_t                  *temp_file;
-    ngx_chain_t                      *bufs;
-    ngx_buf_t                        *buf;
-    off_t                             rest;
-    ngx_chain_t                      *to_write;
-    ngx_http_client_body_handler_pt   post_handler;
+    ngx_temp_file_t                  *temp_file;//存放http包体的临时文件
+    ngx_chain_t                      *bufs;//接受http包体的内存缓冲区链表，当包体需要全部放在内存且一块buffer无法存放时，使用该字段来放
+    ngx_buf_t                        *buf;//直接接受http包体的缓存
+    off_t                             rest;//根据content-length头部和已接收到的包体长度计算还需要接收的包体长度
+    ngx_chain_t                      *to_write;//该缓冲区链表存放将写入文件的包体
+    ngx_http_client_body_handler_pt   post_handler;//包体接收完毕后的回调函数
 } ngx_http_request_body_t;
 
 
@@ -359,6 +360,10 @@ struct ngx_http_request_s {
     void                            **srv_conf;
     void                            **loc_conf;
 
+	/* 在接受完http头部，第一次业务处理http请求时，http框架提供的处理方法是ngx_http_process_request。
+	 * 但如果该方法无法一次处理完该请求的全部业务，在归还控制权到epoll事件模块后，该请求再次被回调时，
+	 * 将通过ngx_http_request_handler方法来处理，而这个方法中对于可读事件的处理就是调用read_event_handler处理请求。
+	 */
     ngx_http_event_handler_pt         read_event_handler;
     ngx_http_event_handler_pt         write_event_handler;
 
@@ -376,7 +381,7 @@ struct ngx_http_request_s {
     ngx_http_headers_in_t             headers_in;//http request header描述符
     ngx_http_headers_out_t            headers_out;
 
-    ngx_http_request_body_t          *request_body;
+    ngx_http_request_body_t          *request_body;//接收request body的结构体
 
     time_t                            lingering_time;
     time_t                            start_sec;//接收到请求的时间
@@ -429,7 +434,7 @@ struct ngx_http_request_s {
 
     ngx_http_log_handler_pt           log_handler;
 
-    ngx_http_cleanup_t               *cleanup;
+    ngx_http_cleanup_t               *cleanup;//请求对应的资源清理链表
 
     unsigned                          subrequests:8;
     unsigned                          count:8;
@@ -460,7 +465,7 @@ struct ngx_http_request_s {
     unsigned                          uri_changes:4;
 
     unsigned                          request_body_in_single_buf:1;
-    unsigned                          request_body_in_file_only:1;
+    unsigned                          request_body_in_file_only:1;//标志位，把http body存放到文件中
     unsigned                          request_body_in_persistent_file:1;
     unsigned                          request_body_in_clean_file:1;
     unsigned                          request_body_file_group_access:1;

@@ -28,7 +28,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         return rc;
     }
 
-    s = ngx_socket(pc->sockaddr->sa_family, SOCK_STREAM, 0);
+    s = ngx_socket(pc->sockaddr->sa_family, SOCK_STREAM, 0);//创建socket，用于连接上游服务器
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, pc->log, 0, "socket %d", s);
 
@@ -39,7 +39,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     }
 
 
-    c = ngx_get_connection(s, pc->log);
+    c = ngx_get_connection(s, pc->log);//取一个connection结构体
 
     if (c == NULL) {
         if (ngx_close_socket(s) == -1) {
@@ -50,6 +50,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         return NGX_ERROR;
     }
 
+	//设置接收缓冲区
     if (pc->rcvbuf) {
         if (setsockopt(s, SOL_SOCKET, SO_RCVBUF,
                        (const void *) &pc->rcvbuf, sizeof(int)) == -1)
@@ -60,6 +61,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         }
     }
 
+	//设置非阻塞socket
     if (ngx_nonblocking(s) == -1) {
         ngx_log_error(NGX_LOG_ALERT, pc->log, ngx_socket_errno,
                       ngx_nonblocking_n " failed");
@@ -68,7 +70,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     }
 
     if (pc->local) {
-        if (bind(s, pc->local->sockaddr, pc->local->socklen) == -1) {
+        if (bind(s, pc->local->sockaddr, pc->local->socklen) == -1) {//绑定地址
             ngx_log_error(NGX_LOG_CRIT, pc->log, ngx_socket_errno,
                           "bind(%V) failed", &pc->local->name);
 
@@ -76,6 +78,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
         }
     }
 
+	//设置socket网络io的函数
     c->recv = ngx_recv;
     c->send = ngx_send;
     c->recv_chain = ngx_recv_chain;
@@ -125,7 +128,7 @@ ngx_event_connect_peer(ngx_peer_connection_t *pc)
     ngx_log_debug3(NGX_LOG_DEBUG_EVENT, pc->log, 0,
                    "connect to %V, fd:%d #%d", pc->name, s, c->number);
 
-    rc = connect(s, pc->sockaddr, pc->socklen);
+    rc = connect(s, pc->sockaddr, pc->socklen);//连接远端服务器
 
     if (rc == -1) {
         err = ngx_socket_errno;

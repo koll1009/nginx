@@ -318,7 +318,7 @@ ngx_http_set_predicate_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
-/* 脚本中变量个数计数 */
+/* 计算脚本中变量个数计数，通过标志符$来计量 */
 ngx_uint_t
 ngx_http_script_variables_count(ngx_str_t *value)
 {
@@ -334,7 +334,7 @@ ngx_http_script_variables_count(ngx_str_t *value)
 }
 
 
-/* 脚本编译 */
+/* 编译脚本 */
 ngx_int_t
 ngx_http_script_compile(ngx_http_script_compile_t *sc)
 {
@@ -362,13 +362,13 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
 
             if (sc->source->data[i] >= '1' && sc->source->data[i] <= '9') {
 
-                n = sc->source->data[i] - '0';
+                n = sc->source->data[i] - '0';//计算$符后跟的数字
 
                 if (sc->captures_mask & (1 << n)) {
                     sc->dup_capture = 1;
                 }
 
-                sc->captures_mask |= 1 << n;
+                sc->captures_mask |= 1 << n;//添加铺货标记
 
                 if (ngx_http_script_add_capture_code(sc, n) != NGX_OK) {
                     return NGX_ERROR;
@@ -488,7 +488,7 @@ invalid_variable:
     return NGX_ERROR;
 }
 
-
+/* 执行脚本 */
 u_char *
 ngx_http_script_run(ngx_http_request_t *r, ngx_str_t *value,
     void *code_lengths, size_t len, void *code_values)
@@ -514,7 +514,7 @@ ngx_http_script_run(ngx_http_request_t *r, ngx_str_t *value,
     e.request = r;
     e.flushed = 1;
 
-    while (*(uintptr_t *) e.ip) {//整体计算所有指令需要的值空间
+    while (*(uintptr_t *) e.ip) {//整体计算所有指令的返回值需要的空间
         lcode = *(ngx_http_script_len_code_pt *) e.ip;
         len += lcode(&e);
     }
@@ -623,7 +623,7 @@ ngx_http_script_done(ngx_http_script_compile_t *sc)
         }
     }
 
-    if (sc->complete_lengths) {
+    if (sc->complete_lengths) {//插入一条NULL指令，用于标记求length的尾部
         code = ngx_http_script_add_code(*sc->lengths, sizeof(uintptr_t), NULL);
         if (code == NULL) {
             return NGX_ERROR;
@@ -729,6 +729,7 @@ ngx_http_script_add_copy_code(ngx_http_script_compile_t *sc, ngx_str_t *value,
 }
 
 
+/* copy指令需要的内存大小 */
 size_t
 ngx_http_script_copy_len_code(ngx_http_script_engine_t *e)
 {
@@ -1226,7 +1227,7 @@ ngx_http_script_copy_capture_len_code(ngx_http_script_engine_t *e)
 
     code = (ngx_http_script_copy_capture_code_t *) e->ip;
 
-    e->ip += sizeof(ngx_http_script_copy_capture_code_t);
+    e->ip += sizeof(ngx_http_script_copy_capture_code_t);//指令指针指向下一条
 
     n = code->n;
 

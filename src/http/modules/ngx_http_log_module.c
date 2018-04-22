@@ -1311,7 +1311,7 @@ ngx_http_log_open_file_cache(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_ERROR;
 }
 
-
+/* ngx_http_log_moduleÄ£¿éµÄphase handle */
 static ngx_int_t
 ngx_http_log_init(ngx_conf_t *cf)
 {

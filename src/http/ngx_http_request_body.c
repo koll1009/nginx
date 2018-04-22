@@ -18,13 +18,12 @@ static ngx_int_t ngx_http_read_discarded_request_body(ngx_http_request_t *r);
 static ngx_int_t ngx_http_test_expect(ngx_http_request_t *r);
 
 
-/*
+/* 读取http body
  * on completion ngx_http_read_client_request_body() adds to
  * r->request_body->bufs one or two bufs:
  *    *) one memory buf that was preread in r->header_in;
  *    *) one memory or file buf that contains the rest of the body
  */
-
 ngx_int_t
 ngx_http_read_client_request_body(ngx_http_request_t *r,
     ngx_http_client_body_handler_pt post_handler)
@@ -39,7 +38,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
 
     r->main->count++;
 
-    if (r->request_body || r->discard_body) {
+    if (r->request_body || r->discard_body) {//已经做过接收或者丢弃包体的操作，则执行posthandle
         post_handler(r);
         return NGX_OK;
     }
@@ -48,24 +47,24 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
+    rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));//分配http body结构体
     if (rb == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     r->request_body = rb;
 
-    if (r->headers_in.content_length_n < 0) {
+    if (r->headers_in.content_length_n < 0) {//包体长度<0,则无需接收，直接执行posthandle
         post_handler(r);
         return NGX_OK;
     }
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-    if (r->headers_in.content_length_n == 0) {
+    if (r->headers_in.content_length_n == 0) {//包体长度为0，则无需接收包体，直接执行post handle
 
         if (r->request_body_in_file_only) {
-            tf = ngx_pcalloc(r->pool, sizeof(ngx_temp_file_t));//创建临时文件
+            tf = ngx_pcalloc(r->pool, sizeof(ngx_temp_file_t));//创建存放http body的临时文件
             if (tf == NULL) {
                 return NGX_HTTP_INTERNAL_SERVER_ERROR;
             }
@@ -98,7 +97,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
         return NGX_OK;
     }
 
-    rb->post_handler = post_handler;
+    rb->post_handler = post_handler;//设置回调函数
 
     /*
      * set by ngx_pcalloc():
@@ -108,7 +107,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
      *     rb->rest = 0;
      */
 
-    preread = r->header_in->last - r->header_in->pos;
+    preread = r->header_in->last - r->header_in->pos;//接收http head时有可能已经接收到http body，计算已经预读的字节数
 
     if (preread) {
 
@@ -117,7 +116,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
         ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                        "http client request body preread %uz", preread);
 
-        b = ngx_calloc_buf(r->pool);
+        b = ngx_calloc_buf(r->pool);//创建缓存
         if (b == NULL) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
@@ -128,7 +127,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
         b->last = r->header_in->last;
         b->end = r->header_in->end;
 
-        rb->bufs = ngx_alloc_chain_link(r->pool);
+        rb->bufs = ngx_alloc_chain_link(r->pool);//分配ngx_chain_t
         if (rb->bufs == NULL) {
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
@@ -138,7 +137,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
 
         rb->buf = b;
 
-        if ((off_t) preread >= r->headers_in.content_length_n) {
+        if ((off_t) preread >= r->headers_in.content_length_n) {//http body已经读取完毕
 
             /* the whole request body was pre-read */
 
@@ -147,7 +146,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
             b->last = r->header_in->pos;
 
             if (r->request_body_in_file_only) {
-                if (ngx_http_write_request_body(r, rb->bufs) != NGX_OK) {
+                if (ngx_http_write_request_body(r, rb->bufs) != NGX_OK) {//把包体写进临时文件
                     return NGX_HTTP_INTERNAL_SERVER_ERROR;
                 }
             }
@@ -167,15 +166,15 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
 
         rb->rest = r->headers_in.content_length_n - preread;
 
-        if (rb->rest <= (off_t) (b->end - b->last)) {
+        if (rb->rest <= (off_t) (b->end - b->last)) {//缓存有足够的空间读取http body
 
             /* the whole request body may be placed in r->header_in */
 
-            rb->to_write = rb->bufs;
+            rb->to_write = rb->bufs;//把写缓存指向读缓存
 
-            r->read_event_handler = ngx_http_read_client_request_body_handler;
+            r->read_event_handler = ngx_http_read_client_request_body_handler;//设置请求的读事件处理函数
 
-            return ngx_http_do_read_client_request_body(r);
+            return ngx_http_do_read_client_request_body(r);//读取http body字节流的函数
         }
 
         next = &rb->bufs->next;
@@ -257,7 +256,7 @@ ngx_http_read_client_request_body_handler(ngx_http_request_t *r)
     }
 }
 
-
+/* 读取请求中http body的数据 */
 static ngx_int_t
 ngx_http_do_read_client_request_body(ngx_http_request_t *r)
 {
@@ -276,7 +275,7 @@ ngx_http_do_read_client_request_body(ngx_http_request_t *r)
 
     for ( ;; ) {
         for ( ;; ) {
-            if (rb->buf->last == rb->buf->end) {
+            if (rb->buf->last == rb->buf->end) {//当缓存已满时，把当前缓存写入文件
 
                 if (ngx_http_write_request_body(r, rb->to_write) != NGX_OK) {
                     return NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -286,18 +285,18 @@ ngx_http_do_read_client_request_body(ngx_http_request_t *r)
                 rb->buf->last = rb->buf->start;
             }
 
-            size = rb->buf->end - rb->buf->last;
+            size = rb->buf->end - rb->buf->last;//缓存剩余空间
 
             if ((off_t) size > rb->rest) {
                 size = (size_t) rb->rest;
             }
 
-            n = c->recv(c, rb->buf->last, size);
+            n = c->recv(c, rb->buf->last, size);//读取body
 
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                            "http client request body recv %z", n);
 
-            if (n == NGX_AGAIN) {
+            if (n == NGX_AGAIN) {//此时socket的读缓存区为空，需要放入epoll中等待再次可读
                 break;
             }
 
@@ -306,7 +305,7 @@ ngx_http_do_read_client_request_body(ngx_http_request_t *r)
                               "client closed prematurely connection");
             }
 
-            if (n == 0 || n == NGX_ERROR) {
+            if (n == 0 || n == NGX_ERROR) {//客户端关闭或者recv出现错误
                 c->error = 1;
                 return NGX_HTTP_BAD_REQUEST;
             }
@@ -315,11 +314,11 @@ ngx_http_do_read_client_request_body(ngx_http_request_t *r)
             rb->rest -= n;
             r->request_length += n;
 
-            if (rb->rest == 0) {
+            if (rb->rest == 0) {//读取完毕，退出循环
                 break;
             }
 
-            if (rb->buf->last < rb->buf->end) {
+            if (rb->buf->last < rb->buf->end) {//body未读取完，但缓存区还有空闲，说明socket的读缓冲区已空，需要放入epoll中等待再次可读
                 break;
             }
         }
@@ -331,7 +330,7 @@ ngx_http_do_read_client_request_body(ngx_http_request_t *r)
             break;
         }
 
-        if (!c->read->ready) {
+        if (!c->read->ready) {//把读事件加入epoll
             clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
             ngx_add_timer(c->read, clcf->client_body_timeout);
 
@@ -343,6 +342,7 @@ ngx_http_do_read_client_request_body(ngx_http_request_t *r)
         }
     }
 
+	/* 读取完毕的操作 */
     if (c->read->timer_set) {
         ngx_del_timer(c->read);
     }

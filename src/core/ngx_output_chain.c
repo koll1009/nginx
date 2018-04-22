@@ -63,7 +63,7 @@ ngx_output_chain(ngx_output_chain_ctx_t *ctx, ngx_chain_t *in)
 #endif
             && ngx_output_chain_as_is(ctx, in->buf))
         {
-            return ctx->output_filter(ctx->filter_ctx, in);
+            return ctx->output_filter(ctx->filter_ctx, in);//调用send函数，把数据发送到上游服务器
         }
     }
 
@@ -596,7 +596,7 @@ ngx_output_chain_copy_buf(ngx_output_chain_ctx_t *ctx)
     return NGX_OK;
 }
 
-
+/* ngx_chain_t的写操作，data指向上下文，in指向buffer链表 */
 ngx_int_t
 ngx_chain_writer(void *data, ngx_chain_t *in)
 {
@@ -616,7 +616,7 @@ ngx_chain_writer(void *data, ngx_chain_t *in)
         }
 #endif
 
-        size += ngx_buf_size(in->buf);
+        size += ngx_buf_size(in->buf);//计算当前buffer的数据大小
 
         ngx_log_debug2(NGX_LOG_DEBUG_CORE, c->log, 0,
                        "chain writer buf fl:%d s:%uO",
@@ -652,16 +652,16 @@ ngx_chain_writer(void *data, ngx_chain_t *in)
         return NGX_OK;
     }
 
-    ctx->out = c->send_chain(c, ctx->out, ctx->limit);
+    ctx->out = c->send_chain(c, ctx->out, ctx->limit);//调用connection的send_chain函数执行write操作(对于socket数据，即为send）
 
     ngx_log_debug1(NGX_LOG_DEBUG_CORE, c->log, 0,
                    "chain writer out: %p", ctx->out);
 
-    if (ctx->out == NGX_CHAIN_ERROR) {
+    if (ctx->out == NGX_CHAIN_ERROR) {//执行转发操作时，出现错误 
         return NGX_ERROR;
     }
 
-    if (ctx->out == NULL) {
+    if (ctx->out == NULL) {//发送完毕
         ctx->last = &ctx->out;
 
         if (!c->buffered) {
@@ -669,5 +669,5 @@ ngx_chain_writer(void *data, ngx_chain_t *in)
         }
     }
 
-    return NGX_AGAIN;
+    return NGX_AGAIN;//写缓存不对，需要等待epoll的再次调度
 }

@@ -65,7 +65,7 @@ typedef struct {
 
 typedef struct {
     ngx_hash_t                       headers_in_hash;
-    ngx_array_t                      upstreams;//
+    ngx_array_t                      upstreams;//保存所有
                                              /* ngx_http_upstream_srv_conf_t */
 } ngx_http_upstream_main_conf_t;
 
@@ -112,11 +112,11 @@ struct ngx_http_upstream_srv_conf_s {
     ngx_array_t                     *servers;  /* ngx_http_upstream_server_t数组 */
 
     ngx_uint_t                       flags;
-    ngx_str_t                        host;//upstream对应的服务器名
-    u_char                          *file_name;
-    ngx_uint_t                       line;
-    in_port_t                        port;//upstream对应的端口号
-    in_port_t                        default_port;
+    ngx_str_t                        host;//upstream配置的主机名
+    u_char                          *file_name;//配置文件名
+    ngx_uint_t                       line;//该配置项在文件中的行号
+    in_port_t                        port;//upstream配置的端口号
+    in_port_t                        default_port;//默认端口号
 };
 
 
@@ -257,7 +257,7 @@ typedef void (*ngx_http_upstream_handler_pt)(ngx_http_request_t *r,
 
 struct ngx_http_upstream_s {
     ngx_http_upstream_handler_pt     read_event_handler;//读事件的回调函数
-    ngx_http_upstream_handler_pt     write_event_handler;
+    ngx_http_upstream_handler_pt     write_event_handler;//写事件的回调函数
 
     ngx_peer_connection_t            peer;//上游服务器的连接
 
@@ -268,12 +268,12 @@ struct ngx_http_upstream_s {
 	 */
     ngx_event_pipe_t                *pipe;
 
-    ngx_chain_t                     *request_bufs;//发送的上游服务器的请求
+    ngx_chain_t                     *request_bufs;//发送到上游服务器的数据
 
     ngx_output_chain_ctx_t           output;
     ngx_chain_writer_ctx_t           writer;
 
-    ngx_http_upstream_conf_t        *conf;//使用upstream机制时的配置参数
+    ngx_http_upstream_conf_t        *conf;//使用upstream机制时的配置参数，指定了upstream的运行方式
 
     ngx_http_upstream_headers_in_t   headers_in;
 
@@ -307,7 +307,7 @@ struct ngx_http_upstream_s {
     ngx_http_upstream_state_t       *state;
 
     ngx_str_t                        method;
-    ngx_str_t                        schema;
+    ngx_str_t                        schema;//上游服务器协议
     ngx_str_t                        uri;
 
     ngx_http_cleanup_pt             *cleanup;
@@ -322,7 +322,14 @@ struct ngx_http_upstream_s {
 
     unsigned                         buffering:1;//向下游转发上游的包体时，是否开启更大的内存及临时文件用于缓存来不及发送到下游的响应包体
 
+	/* 标志位，request_sent表示是否已经向上游服务器发送了请求，当request_sent为1时，
+	 * 表示upstream机制已经向上游服务器发送了全部或者部分的请求。事实上，这个标志位更多的是为了使用
+     * ngx_output_chain方法发送请求，因为该方法发送请求时会自动把未发送完的request_bufs链表记录下来，
+	 * 为了防止反复发送重复请求，必须有request_sent标志位记录是否调用过ngx_output_chain方法
+     */
     unsigned                         request_sent:1;
+
+	/* 将上游服务器的响应氛围包头和包尾，如果把响应转发给客户端，该标志标识是否已发送包头 */
     unsigned                         header_sent:1;
 };
 

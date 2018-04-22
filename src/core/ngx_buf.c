@@ -44,7 +44,7 @@ ngx_create_temp_buf(ngx_pool_t *pool, size_t size)
     return b;
 }
 
-/* 分配一个ngx_chait_t */
+/* 分配一个ngx_chain_t */
 ngx_chain_t *
 ngx_alloc_chain_link(ngx_pool_t *pool)
 {
@@ -65,7 +65,7 @@ ngx_alloc_chain_link(ngx_pool_t *pool)
     return cl;
 }
 
-
+/* 分配ngx_chain_t结构，把@bufs数组串成一个链表 */
 ngx_chain_t *
 ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs)
 {
@@ -123,7 +123,7 @@ ngx_create_chain_of_bufs(ngx_pool_t *pool, ngx_bufs_t *bufs)
     return chain;
 }
 
-
+/* 复制 */
 ngx_int_t
 ngx_chain_add_copy(ngx_pool_t *pool, ngx_chain_t **chain, ngx_chain_t *in)
 {

@@ -59,6 +59,7 @@ typedef struct {
 } ngx_path_init_t;
 
 
+/* 临时文件结构体 */
 typedef struct {
     ngx_file_t                 file;
     off_t                      offset;

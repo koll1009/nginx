@@ -677,7 +677,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
                 ngx_locked_post_event(rev, queue);
 
             } else {
-                rev->handler(rev);
+                rev->handler(rev);//Ö´ÐÐ¶Á²Ù×÷
             }
         }
 

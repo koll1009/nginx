@@ -1673,7 +1673,7 @@ ngx_http_process_request(ngx_http_request_t *r)
 
     c->read->handler = ngx_http_request_handler;//设置读写事件处理函数
     c->write->handler = ngx_http_request_handler;
-    r->read_event_handler = ngx_http_block_reading;
+    r->read_event_handler = ngx_http_block_reading;//该函数为阻塞读的原因时，会把读事件从epoll中remove掉
 
     ngx_http_handler(r);//执行http phase handler
 
@@ -1829,10 +1829,10 @@ ngx_http_request_handler(ngx_event_t *ev)
         r->read_event_handler(r);//执行请求的读回调函数
     }
 
-    ngx_http_run_posted_requests(c);
+    ngx_http_run_posted_requests(c);//
 }
 
-
+/* sub request执行 */
 void
 ngx_http_run_posted_requests(ngx_connection_t *c)
 {
@@ -1847,13 +1847,13 @@ ngx_http_run_posted_requests(ngx_connection_t *c)
         }
 
         r = c->data;
-        pr = r->main->posted_requests;//
+        pr = r->main->posted_requests;//main字段指向原始请求指针，posted_requests为sub request链表
 
         if (pr == NULL) {//无子请求，返回
             return;
         }
 
-        r->main->posted_requests = pr->next;
+        r->main->posted_requests = pr->next;//把pr从sub链表中remove
 
         r = pr->request;
 
@@ -1863,7 +1863,7 @@ ngx_http_run_posted_requests(ngx_connection_t *c)
         ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
                        "http posted request: \"%V?%V\"", &r->uri, &r->args);
 
-        r->write_event_handler(r);
+        r->write_event_handler(r);//即子请求执行ngx_http_core_run_phases函数
     }
 }
 
@@ -2318,6 +2318,7 @@ ngx_http_request_finalizer(ngx_http_request_t *r)
 }
 
 
+/* 排除读事件 */
 void
 ngx_http_block_reading(ngx_http_request_t *r)
 {

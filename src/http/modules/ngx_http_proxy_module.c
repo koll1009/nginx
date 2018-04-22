@@ -53,22 +53,24 @@ typedef struct {
 
     ngx_array_t                   *headers_source;
 
-    ngx_array_t                   *proxy_lengths;
-    ngx_array_t                   *proxy_values;
+    ngx_array_t                   *proxy_lengths;//proxy_pass uri里变量脚本解析len指令
+    ngx_array_t                   *proxy_values;//proxy_pass uri里变量脚本解析code指令
 
     ngx_array_t                   *redirects;
 
     ngx_str_t                      body_source;
 
     ngx_str_t                      method;
-    ngx_str_t                      location;//代理对应的location{}地址
-    ngx_str_t                      url;
+
+	/* 下面的两个字段，即把指向location的请求导向url */
+    ngx_str_t                      location;//代理对应的原始location{}的名字（即path名）
+    ngx_str_t                      url;//反向代理指向的url
 
 #if (NGX_HTTP_CACHE)
     ngx_http_complex_value_t       cache_key;
 #endif
 
-    ngx_http_proxy_vars_t          vars;
+    ngx_http_proxy_vars_t          vars;//反向代理的变量信息
 
     ngx_flag_t                     redirect;
 
@@ -522,7 +524,7 @@ static ngx_keyval_t  ngx_http_proxy_cache_headers[] = {
 
 #endif
 
-
+/* 定义内置变量 */
 static ngx_http_variable_t  ngx_http_proxy_vars[] = {
 
     { ngx_string("proxy_host"), NULL, ngx_http_proxy_host_variable, 0,
@@ -550,7 +552,7 @@ static ngx_path_init_t  ngx_http_proxy_temp_path = {
 };
 
 
-/* proxy代理的handle函数 */
+/* proxy代理的handle函数，当执行到content phase时会执行该函数 */
 static ngx_int_t
 ngx_http_proxy_handler(ngx_http_request_t *r)
 {
@@ -559,22 +561,22 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
     ngx_http_proxy_ctx_t       *ctx;
     ngx_http_proxy_loc_conf_t  *plcf;
 
-    if (ngx_http_upstream_create(r) != NGX_OK) {
+    if (ngx_http_upstream_create(r) != NGX_OK) {//创建request指向的upstream结构体
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_proxy_ctx_t));
+    ctx = ngx_pcalloc(r->pool, sizeof(ngx_http_proxy_ctx_t));//创建ngx_http_proxy_module模块配置上下文
     if (ctx == NULL) {
         return NGX_ERROR;
     }
 
-    ngx_http_set_ctx(r, ctx, ngx_http_proxy_module);
+    ngx_http_set_ctx(r, ctx, ngx_http_proxy_module);//设置ngx_http_proxy_module模块的上下文
 
-    plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_module);
+    plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_module);//取ngx_http_proxy_module location级别的配置项
 
     u = r->upstream;
 
-    if (plcf->proxy_lengths == NULL) {
+    if (plcf->proxy_lengths == NULL) {//上游服务器的url地址里没有变量脚本
         ctx->vars = plcf->vars;
         u->schema = plcf->vars.schema;
 #if (NGX_HTTP_SSL)
@@ -582,7 +584,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
 #endif
 
     } else {
-        if (ngx_http_proxy_eval(r, ctx, plcf) != NGX_OK) {
+        if (ngx_http_proxy_eval(r, ctx, plcf) != NGX_OK) {//执行url中的脚本指令，并重新解析url
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
     }
@@ -594,6 +596,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
 #if (NGX_HTTP_CACHE)
     u->create_key = ngx_http_proxy_create_key;
 #endif
+	/* 设置一系列回调函数 */
     u->create_request = ngx_http_proxy_create_request;
     u->reinit_request = ngx_http_proxy_reinit_request;
     u->process_header = ngx_http_proxy_process_status_line;
@@ -607,7 +610,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
 
     u->buffering = plcf->upstream.buffering;
 
-    u->pipe = ngx_pcalloc(r->pool, sizeof(ngx_event_pipe_t));
+    u->pipe = ngx_pcalloc(r->pool, sizeof(ngx_event_pipe_t));//分配event pipe
     if (u->pipe == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -616,7 +619,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
 
     u->accel = 1;
 
-    rc = ngx_http_read_client_request_body(r, ngx_http_upstream_init);
+    rc = ngx_http_read_client_request_body(r, ngx_http_upstream_init);//读取http body流，ngx_http_upstream_init为读取body完毕后执行的操作
 
     if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
         return rc;
@@ -625,7 +628,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
     return NGX_DONE;
 }
 
-
+/* 上游服务器的url中包含脚本命令时，编译后会执行该函数，会重新解析url */
 static ngx_int_t
 ngx_http_proxy_eval(ngx_http_request_t *r, ngx_http_proxy_ctx_t *ctx,
     ngx_http_proxy_loc_conf_t *plcf)
@@ -637,6 +640,7 @@ ngx_http_proxy_eval(ngx_http_request_t *r, ngx_http_proxy_ctx_t *ctx,
     ngx_url_t             url;
     ngx_http_upstream_t  *u;
 
+	//执行脚本命令
     if (ngx_http_script_run(r, &proxy, plcf->proxy_lengths->elts, 0,
                             plcf->proxy_values->elts)
         == NULL)
@@ -644,6 +648,7 @@ ngx_http_proxy_eval(ngx_http_request_t *r, ngx_http_proxy_ctx_t *ctx,
         return NGX_ERROR;
     }
 
+	/* http协议，默认端口80 https协议，默认端口443 */
     if (proxy.len > 7
         && ngx_strncasecmp(proxy.data, (u_char *) "http://", 7) == 0)
     {
@@ -669,7 +674,7 @@ ngx_http_proxy_eval(ngx_http_request_t *r, ngx_http_proxy_ctx_t *ctx,
 
     u = r->upstream;
 
-    u->schema.len = add;
+    u->schema.len = add;//设置上游服务器的协议
     u->schema.data = proxy.data;
 
     ngx_memzero(&url, sizeof(ngx_url_t));
@@ -680,7 +685,7 @@ ngx_http_proxy_eval(ngx_http_request_t *r, ngx_http_proxy_ctx_t *ctx,
     url.uri_part = 1;
     url.no_resolve = 1;
 
-    if (ngx_parse_url(r->pool, &url) != NGX_OK) {
+    if (ngx_parse_url(r->pool, &url) != NGX_OK) {//解析url
         if (url.err) {
             ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                           "%s in upstream \"%V\"", url.err, &url.url);
@@ -690,7 +695,7 @@ ngx_http_proxy_eval(ngx_http_request_t *r, ngx_http_proxy_ctx_t *ctx,
     }
 
     if (url.uri.len) {
-        if (url.uri.data[0] == '?') {
+        if (url.uri.data[0] == '?') {//如果uri路径直接以querystring开始(?),则在uri添加默认路径
             p = ngx_pnalloc(r->pool, url.uri.len + 1);
             if (p == NULL) {
                 return NGX_ERROR;
@@ -709,14 +714,14 @@ ngx_http_proxy_eval(ngx_http_request_t *r, ngx_http_proxy_ctx_t *ctx,
 
     ctx->vars.key_start = u->schema;
 
-    ngx_http_proxy_set_vars(&url, &ctx->vars);
+    ngx_http_proxy_set_vars(&url, &ctx->vars);//设置代理信息
 
-    u->resolved = ngx_pcalloc(r->pool, sizeof(ngx_http_upstream_resolved_t));
+    u->resolved = ngx_pcalloc(r->pool, sizeof(ngx_http_upstream_resolved_t));//分配上有服务器解析结构体
     if (u->resolved == NULL) {
         return NGX_ERROR;
     }
 
-    if (url.addrs && url.addrs[0].sockaddr) {
+    if (url.addrs && url.addrs[0].sockaddr) {//url对应多个地址，则使用第一个地址
         u->resolved->sockaddr = url.addrs[0].sockaddr;
         u->resolved->socklen = url.addrs[0].socklen;
         u->resolved->naddrs = 1;
@@ -833,7 +838,9 @@ ngx_http_proxy_create_key(ngx_http_request_t *r)
 #endif
 
 
-/* ngx_http_proxy_module_t模块创建上游请求的方法 */
+/* ngx_http_proxy_module_t模块创建上游服务器的请求的方法，主要用来分配转发到http upstream的http协议内容，按照request line ，header，baody
+ * 的协议格式构造
+ */
 static ngx_int_t
 ngx_http_proxy_create_request(ngx_http_request_t *r)
 {
@@ -908,6 +915,7 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
 
     ngx_http_script_flush_no_cacheable_variables(r, plcf->flushes);
 
+	/* 如果body里有脚本，则执行脚本命令计算内存需要 */
     if (plcf->body_set_len) {
         le.ip = plcf->body_set_len->elts;
         le.request = r;
@@ -923,6 +931,7 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
         len += body_len;
     }
 
+	/* 同上 */
     le.ip = plcf->headers_set_len->elts;
     le.request = r;
     le.flushed = 1;
@@ -977,12 +986,13 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
     cl->buf = b;
 
 
-    /* the request line */
-
-    b->last = ngx_copy(b->last, method.data, method.len);
+    /* the request line  构造向上有服务器转发请求的request line */
+	
+    b->last = ngx_copy(b->last, method.data, method.len); //复制http method
 
     u->uri.data = b->last;
 
+	/* 复制http请求的path */
     if (plcf->proxy_lengths) {
         b->last = ngx_copy(b->last, ctx->vars.uri.data, ctx->vars.uri.len);
 
@@ -1012,9 +1022,13 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
 
     u->uri.len = b->last - u->uri.data;
 
+	/* 复制http协议的版本号，此时http request line完整了 */
     b->last = ngx_cpymem(b->last, ngx_http_proxy_version,
                          sizeof(ngx_http_proxy_version) - 1);
 
+
+
+	/* 下面构造http请求的header */
     ngx_memzero(&e, sizeof(ngx_http_script_engine_t));
 
     e.ip = plcf->headers_set->elts;
@@ -1093,8 +1107,10 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
 
 
     /* add "\r\n" at the header end */
-    *b->last++ = CR; *b->last++ = LF;
+    *b->last++ = CR; *b->last++ = LF;//添加/r/n字符在header末端，此时http request header构造完毕
 
+
+	/* 构造http请求的body */
     if (plcf->body_set) {
         e.ip = plcf->body_set->elts;
         e.pos = b->last;
@@ -2381,6 +2397,8 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
 
+	//设置loc的handler，这个clcf->handler会在ngx_http_update_location_config()里面赋予r->content_handler，
+	//从而在NGX_HTTP_CONTENT_PHASE里面调用这个handler，即ngx_http_proxy_handler。
     clcf->handler = ngx_http_proxy_handler;
 
     if (clcf->name.data[clcf->name.len - 1] == '/') {//如果location的name指向的是前置路径，则默认为自动重定向
@@ -2393,6 +2411,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     n = ngx_http_script_variables_count(url);//URL中变量个数
 
+	//编译uri中的脚本
     if (n) {
 
         ngx_memzero(&sc, sizeof(ngx_http_script_compile_t));
@@ -2402,7 +2421,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         sc.lengths = &plcf->proxy_lengths;
         sc.values = &plcf->proxy_values;
         sc.variables = n;
-        sc.complete_lengths = 1;
+        sc.complete_lengths = 1;//
         sc.complete_values = 1;
 
         if (ngx_http_script_compile(&sc) != NGX_OK) {
@@ -2459,9 +2478,9 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     plcf->vars.schema.data = url->data;
     plcf->vars.key_start = plcf->vars.schema;
 
-    ngx_http_proxy_set_vars(&u, &plcf->vars);
+    ngx_http_proxy_set_vars(&u, &plcf->vars);//设置反向代理指向的服务器的信息，包括主机名、端口号、uri等
 
-    plcf->location = clcf->name;
+    plcf->location = clcf->name;//反向代理对应的原始uri
 
     if (clcf->named
 #if (NGX_PCRE)
@@ -2806,12 +2825,13 @@ ngx_http_proxy_set_ssl(ngx_conf_t *cf, ngx_http_proxy_loc_conf_t *plcf)
 static void
 ngx_http_proxy_set_vars(ngx_url_t *u, ngx_http_proxy_vars_t *v)
 {
-    if (u->family != AF_UNIX) {
+    if (u->family != AF_UNIX) {//非unix域
 
-        if (u->no_port || u->port == u->default_port) {
+        if (u->no_port || u->port == u->default_port) {//如果没有没有端口号或者端口号等于默认端口号
 
             v->host_header = u->host;
 
+			/* 此时端口字符串直接指向静态字符串 */
             if (u->default_port == 80) {
                 ngx_str_set(&v->port, "80");
 

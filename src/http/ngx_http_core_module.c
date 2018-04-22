@@ -881,7 +881,7 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "generic phase: %ui", r->phase_handler);
 
-    rc = ph->handler(r);/* 调用这一阶段http模块添加的handler处理方法 */
+    rc = ph->handler(r);/* 调用这一阶段http模块的handler函数 */
 
 	/* 返回NGX_OK则进入下一阶段处理，即使本阶段还有其他处理函数 */
     if (rc == NGX_OK) {
@@ -967,7 +967,7 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
                    (clcf->noname ? "*" : (clcf->exact_match ? "=" : "")),
                    &clcf->name);
 
-    ngx_http_update_location_config(r);
+    ngx_http_update_location_config(r);//使用location的配置更新request的基本信息
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http cl:%O max:%O",
@@ -1521,7 +1521,7 @@ ngx_http_core_find_location(ngx_http_request_t *r)
 
     pclcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-    rc = ngx_http_core_find_static_location(r, pclcf->static_locations);
+    rc = ngx_http_core_find_static_location(r, pclcf->static_locations);//搜索匹配的location
 
     if (rc == NGX_AGAIN) {
 
@@ -1576,13 +1576,12 @@ ngx_http_core_find_location(ngx_http_request_t *r)
 }
 
 
-/* 搜索静态location tree
+/* 搜索静态location tree，地址匹配
  * NGX_OK       - exact match
  * NGX_DONE     - auto redirect
  * NGX_AGAIN    - inclusive match
  * NGX_DECLINED - no match
  */
-
 static ngx_int_t
 ngx_http_core_find_static_location(ngx_http_request_t *r,
     ngx_http_location_tree_node_t *node)
@@ -2586,7 +2585,7 @@ ngx_http_named_location(ngx_http_request_t *r, ngx_str_t *name)
     return NGX_DONE;
 }
 
-
+/* 添加一个资源清理结构体 */
 ngx_http_cleanup_t *
 ngx_http_cleanup_add(ngx_http_request_t *r, size_t size)
 {

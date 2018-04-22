@@ -54,8 +54,8 @@ typedef struct {
     void                       *main;
 
     unsigned                    compile_args:1;//是否解析脚本中参数的标志
-    unsigned                    complete_lengths:1;
-    unsigned                    complete_values:1;
+    unsigned                    complete_lengths:1;//标志，会在length指令尾端插入一个NULL值，作为指令的结束
+    unsigned                    complete_values:1;//标志，会在value指令尾端插入一个NULL值，作为指令的结束
     unsigned                    zero:1;
     unsigned                    conf_prefix:1;
     unsigned                    root_prefix:1;

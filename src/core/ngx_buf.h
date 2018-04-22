@@ -19,8 +19,8 @@ typedef struct ngx_buf_s  ngx_buf_t;
 
 /* 缓冲区结构体 */
 struct ngx_buf_s {
-    u_char          *pos;//当前
-    u_char          *last;
+    u_char          *pos;//当前处理到的缓存地址
+    u_char          *last;//有效缓存的末端地址
     off_t            file_pos;//文件的offset
     off_t            file_last;//文件大小
 
@@ -56,7 +56,7 @@ struct ngx_buf_s {
     /* STUB */ int   num;
 };
 
-
+//缓存链表结构体
 struct ngx_chain_s {
     ngx_buf_t    *buf;
     ngx_chain_t  *next;

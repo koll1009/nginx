@@ -384,12 +384,12 @@ ngx_http_upstream_create(ngx_http_request_t *r)
         ngx_http_upstream_cleanup(r);
     }
 
-    u = ngx_pcalloc(r->pool, sizeof(ngx_http_upstream_t));
+    u = ngx_pcalloc(r->pool, sizeof(ngx_http_upstream_t));//新建ngx_http_upstream_t结构体
     if (u == NULL) {
         return NGX_ERROR;
     }
 
-    r->upstream = u;
+    r->upstream = u;//请求对应的上有服务器
 
     u->peer.log = r->connection->log;
     u->peer.log_error = NGX_ERROR_ERR;
@@ -405,7 +405,7 @@ ngx_http_upstream_create(ngx_http_request_t *r)
 }
 
 
-/* 启动ustream */
+/* 启动UpStream机制 */
 void
 ngx_http_upstream_init(ngx_http_request_t *r)
 {
@@ -416,7 +416,7 @@ ngx_http_upstream_init(ngx_http_request_t *r)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http init upstream, client timer: %d", c->read->timer_set);
 
-    if (c->read->timer_set) {//此时会发起上游的连接，无需等待网卡数据的到来，所以需要把定时器事件删除
+    if (c->read->timer_set) {//此时会发起上游的连接，无需等待网卡数据的到来，所以需要把读事件的从定时器中删除
         ngx_del_timer(c->read);
     }
 
@@ -482,16 +482,16 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
     u->store = (u->conf->store || u->conf->store_lengths);
 
-    if (!u->store && !r->post_action && !u->conf->ignore_client_abort) {
+    if (!u->store && !r->post_action && !u->conf->ignore_client_abort) {//检查与下游的连接是否正常
         r->read_event_handler = ngx_http_upstream_rd_check_broken_connection;
         r->write_event_handler = ngx_http_upstream_wr_check_broken_connection;
     }
 
     if (r->request_body) {
-        u->request_bufs = r->request_body->bufs;
+        u->request_bufs = r->request_body->bufs;//设置发送到上有服务器的数据
     }
 
-    if (u->create_request(r) != NGX_OK) {//创建上游请求
+    if (u->create_request(r) != NGX_OK) {//创建发送到上游服务器的请求，主要是构造请求的数据，包括line header body
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
         return;
     }
@@ -500,16 +500,17 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
+	/* 初始化output上下文 */
     u->output.alignment = clcf->directio_alignment;
     u->output.pool = r->pool;
     u->output.bufs.num = 1;
     u->output.bufs.size = clcf->client_body_buffer_size;
-    u->output.output_filter = ngx_chain_writer;
+    u->output.output_filter = ngx_chain_writer;//把请求数据转发到上游服务器的方法
     u->output.filter_ctx = &u->writer;
 
     u->writer.pool = r->pool;
 
-    if (r->upstream_states == NULL) {
+    if (r->upstream_states == NULL) {//创建ngx_http_upstream_state_t
 
         r->upstream_states = ngx_array_create(r->pool, 1,
                                             sizeof(ngx_http_upstream_state_t));
@@ -530,7 +531,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
         ngx_memzero(u->state, sizeof(ngx_http_upstream_state_t));
     }
 
-    cln = ngx_http_cleanup_add(r, 0);
+    cln = ngx_http_cleanup_add(r, 0);//新增一个资源清理结构体
     if (cln == NULL) {
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
         return;
@@ -1104,7 +1105,7 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
     u->state->response_sec = tp->sec;
     u->state->response_msec = tp->msec;
 
-    rc = ngx_event_connect_peer(&u->peer);
+    rc = ngx_event_connect_peer(&u->peer);//连接远端服务器
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http upstream connect: %i", rc);
@@ -1134,10 +1135,10 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     c->data = r;
 
-    c->write->handler = ngx_http_upstream_handler;
+    c->write->handler = ngx_http_upstream_handler;//设置读写事件的回调函数，当连接成功后会调用
     c->read->handler = ngx_http_upstream_handler;
 
-    u->write_event_handler = ngx_http_upstream_send_request_handler;
+    u->write_event_handler = ngx_http_upstream_send_request_handler;//如果连接第一时间未成功，当连接成功后，会调用c
     u->read_event_handler = ngx_http_upstream_process_header;
 
     c->sendfile &= r->connection->sendfile;
@@ -1191,7 +1192,7 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     u->request_sent = 0;
 
-    if (rc == NGX_AGAIN) {
+    if (rc == NGX_AGAIN) {//设置连接超时时间
         ngx_add_timer(c->write, u->conf->connect_timeout);
         return;
     }
@@ -1343,7 +1344,7 @@ ngx_http_upstream_reinit(ngx_http_request_t *r, ngx_http_upstream_t *u)
     return NGX_OK;
 }
 
-
+/* 向上游发送请求 */
 static void
 ngx_http_upstream_send_request(ngx_http_request_t *r, ngx_http_upstream_t *u)
 {
@@ -1362,23 +1363,23 @@ ngx_http_upstream_send_request(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     c->log->action = "sending request to upstream";
 
-    rc = ngx_output_chain(&u->output, u->request_sent ? NULL : u->request_bufs);
+    rc = ngx_output_chain(&u->output, u->request_sent ? NULL : u->request_bufs);//向上游服务器发送request_bufs链表里的数据
 
-    u->request_sent = 1;
+    u->request_sent = 1;//标记
 
-    if (rc == NGX_ERROR) {
+    if (rc == NGX_ERROR) {//转发数据时发生了错误
         ngx_http_upstream_next(r, u, NGX_HTTP_UPSTREAM_FT_ERROR);
         return;
     }
 
-    if (c->write->timer_set) {
+    if (c->write->timer_set) {//先把写事件从定时器中删除，如果rc返回ngx_again，表示数据抓发没有完成，会再次添加到定时器中
         ngx_del_timer(c->write);
     }
 
-    if (rc == NGX_AGAIN) {
+    if (rc == NGX_AGAIN) {//数据未发送完毕
         ngx_add_timer(c->write, u->conf->send_timeout);
 
-        if (ngx_handle_write_event(c->write, u->conf->send_lowat) != NGX_OK) {
+        if (ngx_handle_write_event(c->write, u->conf->send_lowat) != NGX_OK) {//
             ngx_http_upstream_finalize_request(r, u,
                                                NGX_HTTP_INTERNAL_SERVER_ERROR);
             return;
@@ -1429,7 +1430,7 @@ ngx_http_upstream_send_request(ngx_http_request_t *r, ngx_http_upstream_t *u)
     }
 }
 
-
+/* 发送请求到上游服务器 */
 static void
 ngx_http_upstream_send_request_handler(ngx_http_request_t *r,
     ngx_http_upstream_t *u)
@@ -1455,7 +1456,7 @@ ngx_http_upstream_send_request_handler(ngx_http_request_t *r,
 
 #endif
 
-    if (u->header_sent) {
+    if (u->header_sent) {//
         u->write_event_handler = ngx_http_upstream_dummy_handler;
 
         (void) ngx_handle_write_event(c->write, 0);
@@ -1466,7 +1467,7 @@ ngx_http_upstream_send_request_handler(ngx_http_request_t *r,
     ngx_http_upstream_send_request(r, u);
 }
 
-
+/* 接收到上游服务器返回的数据header */
 static void
 ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 {
@@ -1481,12 +1482,12 @@ ngx_http_upstream_process_header(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
     c->log->action = "reading response header from upstream";
 
-    if (c->read->timedout) {
+    if (c->read->timedout) {//接收超时
         ngx_http_upstream_next(r, u, NGX_HTTP_UPSTREAM_FT_TIMEOUT);
         return;
     }
 
-    if (!u->request_sent && ngx_http_upstream_test_connect(c) != NGX_OK) {
+    if (!u->request_sent && ngx_http_upstream_test_connect(c) != NGX_OK) {//未发送完毕就接收到了数据
         ngx_http_upstream_next(r, u, NGX_HTTP_UPSTREAM_FT_ERROR);
         return;
     }
@@ -4214,7 +4215,7 @@ invalid:
     return NGX_CONF_ERROR;
 }
 
-/* 新增一个上游服务器 */
+/* 新增一个上游服务器的配置块 */
 ngx_http_upstream_srv_conf_t *
 ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 {
@@ -4235,11 +4236,11 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
         }
     }
 
-    umcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_upstream_module);//找到ngx_http_upstream_module的配置信息上下文
+    umcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_upstream_module);//找到ngx_http_upstream_module的main级别配置信息上下文
 
-    uscfp = umcf->upstreams.elts;
+    uscfp = umcf->upstreams.elts;//保存所有的server级别的ngx_http_upstream_module模块的配置信息上下文
 
-	/* 存在性检查 */
+	/* 重复性检查 */
     for (i = 0; i < umcf->upstreams.nelts; i++) {
 
         if (uscfp[i]->host.len != u->host.len
