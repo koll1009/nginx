@@ -2337,7 +2337,13 @@ ngx_http_gzip_quantity(u_char *p, u_char *last)
 
 #endif
 
-
+/* 启动子请求
+ * @r:父请求
+ * @uri:子请求的地址
+ * @psr：创建的子请求
+ * @ps:子请求处理完毕后的回调函数以及参数结构体
+ * @flags:标记
+ */
 ngx_int_t
 ngx_http_subrequest(ngx_http_request_t *r,
     ngx_str_t *uri, ngx_str_t *args, ngx_http_request_t **psr,
@@ -2358,7 +2364,7 @@ ngx_http_subrequest(ngx_http_request_t *r,
         return NGX_ERROR;
     }
 
-    sr = ngx_pcalloc(r->pool, sizeof(ngx_http_request_t));
+    sr = ngx_pcalloc(r->pool, sizeof(ngx_http_request_t));//新创建一个请求
     if (sr == NULL) {
         return NGX_ERROR;
     }
@@ -2366,7 +2372,7 @@ ngx_http_subrequest(ngx_http_request_t *r,
     sr->signature = NGX_HTTP_MODULE;
 
     c = r->connection;
-    sr->connection = c;
+    sr->connection = c;//设置子请求对应的连接
 
     sr->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);
     if (sr->ctx == NULL) {
@@ -2393,16 +2399,16 @@ ngx_http_subrequest(ngx_http_request_t *r,
     ngx_http_clear_accept_ranges(sr);
     ngx_http_clear_last_modified(sr);
 
-    sr->request_body = r->request_body;
+    sr->request_body = r->request_body;//共享父请求的request body
 
     sr->method = NGX_HTTP_GET;
     sr->http_version = r->http_version;
 
     sr->request_line = r->request_line;
-    sr->uri = *uri;
+    sr->uri = *uri;//子请求的地址
 
     if (args) {
-        sr->args = *args;
+        sr->args = *args;//子请求的参数
     }
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, c->log, 0,
@@ -2420,14 +2426,14 @@ ngx_http_subrequest(ngx_http_request_t *r,
     sr->main = r->main;
     sr->parent = r;
     sr->post_subrequest = ps;
-    sr->read_event_handler = ngx_http_request_empty_handler;
+    sr->read_event_handler = ngx_http_request_empty_handler;//设置请求的处理函数
     sr->write_event_handler = ngx_http_handler;
 
     if (c->data == r && r->postponed == NULL) {
         c->data = sr;
     }
 
-    sr->variables = r->variables;
+    sr->variables = r->variables;//共享父请求的变量
 
     sr->log_handler = r->log_handler;
 
@@ -2440,6 +2446,7 @@ ngx_http_subrequest(ngx_http_request_t *r,
     pr->out = NULL;
     pr->next = NULL;
 
+	/* 插入子请求处理完毕后的回调函数 */
     if (r->postponed) {
         for (p = r->postponed; p->next; p = p->next) { /* void */ }
         p->next = pr;
