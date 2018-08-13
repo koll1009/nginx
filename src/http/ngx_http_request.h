@@ -406,7 +406,7 @@ struct ngx_http_request_s {
     ngx_http_post_subrequest_t       *post_subrequest;
     ngx_http_posted_request_t        *posted_requests;//子请求链表
 
-    ngx_http_virtual_names_t         *virtual_names;
+    ngx_http_virtual_names_t         *virtual_names;//请求对应的虚拟主机名
 
 	/* ngx_http_phase_engine_t结构体中ngx_http_phase_handler_t数组的执行索引 */
     ngx_int_t                         phase_handler;
@@ -430,7 +430,7 @@ struct ngx_http_request_s {
 
     ngx_uint_t                        err_status;
 
-    ngx_http_connection_t            *http_connection;
+    ngx_http_connection_t            *http_connection;//对应的http connection
 
     ngx_http_log_handler_pt           log_handler;
 

@@ -37,8 +37,9 @@ static ngx_command_t  ngx_core_commands[] = {
       ngx_conf_set_flag_slot,
       0,
       offsetof(ngx_core_conf_t, daemon),
-      NULL },
+      NULL }, //是否后台模式
 
+    /* 是否使用master-work processes形式 */
     { ngx_string("master_process"),
       NGX_MAIN_CONF|NGX_DIRECT_CONF|NGX_CONF_FLAG,
       ngx_conf_set_flag_slot,
@@ -46,6 +47,7 @@ static ngx_command_t  ngx_core_commands[] = {
       offsetof(ngx_core_conf_t, master),
       NULL },
 
+    /* 设置定时器事件精度 */
     { ngx_string("timer_resolution"),
       NGX_MAIN_CONF|NGX_DIRECT_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_msec_slot,
@@ -67,6 +69,7 @@ static ngx_command_t  ngx_core_commands[] = {
       offsetof(ngx_core_conf_t, lock_file),
       NULL },
 
+    //工作进程数量
     { ngx_string("worker_processes"),
       NGX_MAIN_CONF|NGX_DIRECT_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_num_slot,
@@ -109,6 +112,7 @@ static ngx_command_t  ngx_core_commands[] = {
       offsetof(ngx_core_conf_t, rlimit_nofile),
       NULL },
 
+    //设置core_dump文件的大小限制
     { ngx_string("worker_rlimit_core"),
       NGX_MAIN_CONF|NGX_DIRECT_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_off_slot,
@@ -123,6 +127,7 @@ static ngx_command_t  ngx_core_commands[] = {
       offsetof(ngx_core_conf_t, rlimit_sigpending),
       NULL },
 
+    //设置core_dump文件的路径
     { ngx_string("working_directory"),
       NGX_MAIN_CONF|NGX_DIRECT_CONF|NGX_CONF_TAKE1,
       ngx_conf_set_str_slot,
@@ -130,6 +135,7 @@ static ngx_command_t  ngx_core_commands[] = {
       offsetof(ngx_core_conf_t, working_directory),
       NULL },
 
+    //设置环境变量
     { ngx_string("env"),
       NGX_MAIN_CONF|NGX_DIRECT_CONF|NGX_CONF_TAKE1,
       ngx_set_env,
@@ -1139,7 +1145,7 @@ ngx_set_user(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return "is duplicate";
     }
 
-    if (geteuid() != 0) {
+    if (geteuid() != 0) {//返回进程的有效用户id
         ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                            "the \"user\" directive makes sense only "
                            "if the master process runs "
@@ -1152,19 +1158,19 @@ ngx_set_user(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ccf->username = (char *) value[1].data;
 
     ngx_set_errno(0);
-    pwd = getpwnam((const char *) value[1].data);
+    pwd = getpwnam((const char *) value[1].data);//取用户相关信息
     if (pwd == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, ngx_errno,
                            "getpwnam(\"%s\") failed", value[1].data);
         return NGX_CONF_ERROR;
     }
 
-    ccf->user = pwd->pw_uid;
+    ccf->user = pwd->pw_uid;//用户id
 
     group = (char *) ((cf->args->nelts == 2) ? value[1].data : value[2].data);
 
     ngx_set_errno(0);
-    grp = getgrnam(group);
+    grp = getgrnam(group);//取user group信息
     if (grp == NULL) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, ngx_errno,
                            "getgrnam(\"%s\") failed", group);
@@ -1178,7 +1184,7 @@ ngx_set_user(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 #endif
 }
 
-
+/* env配置项的解析函数，用户设置系统的环境变量 */
 static char *
 ngx_set_env(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -1249,6 +1255,7 @@ ngx_set_priority(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/* 给工作进程设置CPU */
 static char *
 ngx_set_cpu_affinity(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {

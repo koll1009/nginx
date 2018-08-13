@@ -56,7 +56,7 @@ ngx_event_accept(ngx_event_t *ev)
             s = accept4(lc->fd, (struct sockaddr *) sa, &socklen,
                         SOCK_NONBLOCK);
         } else {
-            s = accept(lc->fd, (struct sockaddr *) sa, &socklen);//读取客户端socket的地址
+            s = accept(lc->fd, (struct sockaddr *) sa, &socklen);//接收连接
         }
 #else
         s = accept(lc->fd, (struct sockaddr *) sa, &socklen);
@@ -105,7 +105,7 @@ ngx_event_accept(ngx_event_t *ev)
         (void) ngx_atomic_fetch_add(ngx_stat_accepted, 1);
 #endif
 
-		//接收到一个客户端连接后，计算该数，如果为负数--即7/8连接已经使用则启用进程间的负载均衡，不在接收新连接
+		//接收到一个客户端连接后，计算该数，如果为负数--即7/8连接则不再接收新连接
         ngx_accept_disabled = ngx_cycle->connection_n / 8
                               - ngx_cycle->free_connection_n;
 
@@ -124,13 +124,13 @@ ngx_event_accept(ngx_event_t *ev)
         (void) ngx_atomic_fetch_add(ngx_stat_active, 1);
 #endif
 
-        c->pool = ngx_create_pool(ls->pool_size, ev->log);
+        c->pool = ngx_create_pool(ls->pool_size, ev->log); //给连接分配一个内存池
         if (c->pool == NULL) {
             ngx_close_accepted_connection(c);
             return;
         }
 
-        c->sockaddr = ngx_palloc(c->pool, socklen);
+        c->sockaddr = ngx_palloc(c->pool, socklen);//保存客户端地址
         if (c->sockaddr == NULL) {
             ngx_close_accepted_connection(c);
             return;
@@ -197,7 +197,7 @@ ngx_event_accept(ngx_event_t *ev)
         rev = c->read;
         wev = c->write;
 
-        wev->ready = 1;
+        wev->ready = 1;//默认可写
 
         if (ngx_event_flags & (NGX_USE_AIO_EVENT|NGX_USE_RTSIG_EVENT)) {
             /* rtsig, aio, iocp */
@@ -236,7 +236,7 @@ ngx_event_accept(ngx_event_t *ev)
         wev->own_lock = &c->lock;
 #endif
 
-        if (ls->addr_ntop) {
+        if (ls->addr_ntop) { //设置字符串ip
             c->addr_text.data = ngx_pnalloc(c->pool, ls->addr_text_max_len);
             if (c->addr_text.data == NULL) {
                 ngx_close_accepted_connection(c);
@@ -274,7 +274,7 @@ ngx_event_accept(ngx_event_t *ev)
                        "*%d accept: %V fd:%d", c->number, &c->addr_text, s);
 
         if (ngx_add_conn && (ngx_event_flags & NGX_USE_EPOLL_EVENT) == 0) {//把客户端socket添加到epoll中
-            if (ngx_add_conn(c) == NGX_ERROR) {
+            if (ngx_add_conn(c) == NGX_ERROR) {//可读、可写
                 ngx_close_accepted_connection(c);
                 return;
             }
@@ -293,6 +293,7 @@ ngx_event_accept(ngx_event_t *ev)
 }
 
 
+//为了防止惊群，在某个时间段，只有一个进程监听端口
 ngx_int_t
 ngx_trylock_accept_mutex(ngx_cycle_t *cycle)
 {

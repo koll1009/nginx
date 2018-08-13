@@ -340,7 +340,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /* optimize the lists of ports, addresses and server names */
 
-    if (ngx_http_optimize_servers(cf, cmcf, cmcf->ports) != NGX_OK) {
+    if (ngx_http_optimize_servers(cf, cmcf, cmcf->ports) != NGX_OK) {//优化各server配置项
         return NGX_CONF_ERROR;
     }
 
@@ -886,7 +886,7 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
 #if (NGX_PCRE)
         || clcf->regex
 #endif
-        || clcf->named || clcf->noname)
+        || clcf->named || clcf->noname) //精确匹配、正则、重定向、
     {
         lq->exact = clcf;
         lq->inclusive = NULL;
@@ -1177,7 +1177,7 @@ ngx_http_add_listen(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
-	/* 监听项的管理是 */
+	/* 每个端口对应多个ip地址，每个ip:port对应多个server{}级配置项 */
     if (cmcf->ports == NULL) {
         cmcf->ports = ngx_array_create(cf->temp_pool, 2,
                                        sizeof(ngx_http_conf_port_t));
@@ -1204,8 +1204,8 @@ ngx_http_add_listen(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 #endif
 
     default: /* AF_INET */
-        sin = &lsopt->u.sockaddr_in;
-        p = sin->sin_port;
+        sin = &lsopt->u.sockaddr_in;//地址
+        p = sin->sin_port;//端口
         break;
     }
 
@@ -1235,7 +1235,7 @@ ngx_http_add_listen(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     return ngx_http_add_address(cf, cscf, port, lsopt);
 }
 
-
+/* 添加地址 */
 static ngx_int_t
 ngx_http_add_addresses(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_http_conf_port_t *port, ngx_http_listen_opt_t *lsopt)
@@ -1285,6 +1285,7 @@ ngx_http_add_addresses(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 
     addr = port->addrs.elts;
 
+    //地址查重
     for (i = 0; i < port->addrs.nelts; i++) {
 
         if (ngx_memcmp(p, addr[i].opt.u.sockaddr_data + off, len) != 0) {
@@ -1317,9 +1318,9 @@ ngx_http_add_addresses(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 
         /* check the duplicate "default" server for this address:port */
 
-        if (lsopt->default_server) {
+        if (lsopt->default_server) {//如果有默认标记，则设置
 
-            if (default_server) {
+            if (default_server) {//双重标记，报错
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                         "a duplicate default server for %s", addr[i].opt.addr);
                 return NGX_ERROR;
@@ -1368,8 +1369,8 @@ ngx_http_add_address(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         return NGX_ERROR;
     }
 
-    addr->opt = *lsopt;
-    addr->hash.buckets = NULL;
+    addr->opt = *lsopt;//地址对应的监听option
+    addr->hash.buckets = NULL;//初始化虚拟主机名的哈希表
     addr->hash.size = 0;
     addr->wc_head = NULL;
     addr->wc_tail = NULL;
@@ -1377,14 +1378,14 @@ ngx_http_add_address(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     addr->nregex = 0;
     addr->regex = NULL;
 #endif
-    addr->default_server = cscf;
+    addr->default_server = cscf;//默认server配置项
     addr->servers.elts = NULL;
 
     return ngx_http_add_server(cf, cscf, addr);
 }
 
 
-/* add the server core module configuration to the address:port */
+/* 添加服务配置项 add the server core module configuration to the address:port */
 static ngx_int_t
 ngx_http_add_server(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_http_conf_addr_t *addr)
@@ -1436,7 +1437,7 @@ ngx_http_optimize_servers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
     }
 
     port = ports->elts;
-    for (p = 0; p < ports->nelts; p++) {//依次遍历各端口号
+    for (p = 0; p < ports->nelts; p++) {//依次遍历各端口
 
         ngx_sort(port[p].addrs.elts, (size_t) port[p].addrs.nelts,
                  sizeof(ngx_http_conf_addr_t), ngx_http_cmp_conf_addrs);//端口下的各地址排序
@@ -1496,13 +1497,13 @@ ngx_http_server_names(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
 
     ha.pool = cf->pool;
 
-    if (ngx_hash_keys_array_init(&ha, NGX_HASH_LARGE) != NGX_OK) {
+    if (ngx_hash_keys_array_init(&ha, NGX_HASH_LARGE) != NGX_OK) {//哈希表初始化数组
         goto failed;
     }
 
     cscfp = addr->servers.elts;
 
-    for (s = 0; s < addr->servers.nelts; s++) {
+    for (s = 0; s < addr->servers.nelts; s++) {//遍历server配置项，依次把主机名添加到
 
         name = cscfp[s]->server_names.elts;
 
@@ -1537,12 +1538,13 @@ ngx_http_server_names(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf,
         }
     }
 
-    hash.key = ngx_hash_key_lc;
+    hash.key = ngx_hash_key_lc;//哈希函数
     hash.max_size = cmcf->server_names_hash_max_size;
     hash.bucket_size = cmcf->server_names_hash_bucket_size;
     hash.name = "server_names_hash";
     hash.pool = cf->pool;
 
+    //初始化带与不带通配符的哈希表
     if (ha.keys.nelts) {
         hash.hash = &addr->hash;
         hash.temp_pool = NULL;
@@ -1704,7 +1706,7 @@ ngx_http_init_listening(ngx_conf_t *cf, ngx_http_conf_port_t *port)
             continue;
         }
 
-        ls = ngx_http_add_listening(cf, &addr[i]);
+        ls = ngx_http_add_listening(cf, &addr[i]);//添加监听项
         if (ls == NULL) {
             return NGX_ERROR;
         }
@@ -1734,7 +1736,7 @@ ngx_http_init_listening(ngx_conf_t *cf, ngx_http_conf_port_t *port)
             break;
 #endif
         default: /* AF_INET */
-            if (ngx_http_add_addrs(cf, hport, addr) != NGX_OK) {
+            if (ngx_http_add_addrs(cf, hport, addr) != NGX_OK) {//添加地址
                 return NGX_ERROR;
             }
             break;
@@ -1760,7 +1762,7 @@ ngx_http_add_listening(ngx_conf_t *cf, ngx_http_conf_addr_t *addr)
         return NULL;
     }
 
-    ls->addr_ntop = 1;//
+    ls->addr_ntop = 1;//已经转义过地址
 
     ls->handler = ngx_http_init_connection;//接收到连接请求后的处理函数
 
@@ -1811,6 +1813,7 @@ ngx_http_add_listening(ngx_conf_t *cf, ngx_http_conf_addr_t *addr)
 }
 
 
+/* 添加地址 */
 static ngx_int_t
 ngx_http_add_addrs(ngx_conf_t *cf, ngx_http_port_t *hport,
     ngx_http_conf_addr_t *addr)
@@ -1831,12 +1834,12 @@ ngx_http_add_addrs(ngx_conf_t *cf, ngx_http_port_t *hport,
     for (i = 0; i < hport->naddrs; i++) {
 
         sin = &addr[i].opt.u.sockaddr_in;
-        addrs[i].addr = sin->sin_addr.s_addr;
-        addrs[i].conf.default_server = addr[i].default_server;
+        addrs[i].addr = sin->sin_addr.s_addr;//设置地址
+        addrs[i].conf.default_server = addr[i].default_server;//默认配置项
 #if (NGX_HTTP_SSL)
         addrs[i].conf.ssl = addr[i].opt.ssl;
 #endif
-
+        //虚拟主机名哈希表
         if (addr[i].hash.buckets == NULL
             && (addr[i].wc_head == NULL
                 || addr[i].wc_head->hash.buckets == NULL)
@@ -1856,7 +1859,8 @@ ngx_http_add_addrs(ngx_conf_t *cf, ngx_http_port_t *hport,
         }
 
         addrs[i].conf.virtual_names = vn;
-
+        
+        //虚拟主机名哈希表
         vn->names.hash = addr[i].hash;
         vn->names.wc_head = addr[i].wc_head;
         vn->names.wc_tail = addr[i].wc_tail;

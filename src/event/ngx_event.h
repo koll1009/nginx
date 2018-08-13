@@ -134,7 +134,7 @@ struct ngx_event_s {
 
     ngx_rbtree_node_t   timer;//插入到红黑树定时器时用到的节点
 
-    unsigned         closed:1;
+    unsigned         closed:1;//可用标志
 
     /* to test on worker exit */
     unsigned         channel:1;

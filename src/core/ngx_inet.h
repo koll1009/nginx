@@ -84,7 +84,7 @@ typedef struct {
     in_port_t                 default_port;//默认端口号
     int                       family;//协议族
 
-    unsigned                  listen:1;
+    unsigned                  listen:1; //监听标志位
     unsigned                  uri_part:1;
     unsigned                  no_resolve:1;
     unsigned                  one_addr:1;//标志位，只取一个host对应的ip地址

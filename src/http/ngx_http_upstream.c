@@ -4215,7 +4215,7 @@ invalid:
     return NGX_CONF_ERROR;
 }
 
-/* 新增一个上游服务器的配置块 */
+/* 新增一个upstream服务器的配置块 */
 ngx_http_upstream_srv_conf_t *
 ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 {
@@ -4224,7 +4224,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
     ngx_http_upstream_srv_conf_t   *uscf, **uscfp;
     ngx_http_upstream_main_conf_t  *umcf;
 
-    if (!(flags & NGX_HTTP_UPSTREAM_CREATE)) {
+    if (!(flags & NGX_HTTP_UPSTREAM_CREATE)) {//
 
         if (ngx_parse_url(cf->pool, u) != NGX_OK) {//解析url
             if (u->err) {
@@ -4236,7 +4236,8 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
         }
     }
 
-    umcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_upstream_module);//找到ngx_http_upstream_module的main级别配置信息上下文
+    //找到ngx_http_upstream_module的main级别配置信息上下文
+    umcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_upstream_module);
 
     uscfp = umcf->upstreams.elts;//保存所有的server级别的ngx_http_upstream_module模块的配置信息上下文
 

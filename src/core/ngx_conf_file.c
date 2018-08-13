@@ -1060,7 +1060,8 @@ ngx_conf_set_flag_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     value = cf->args->elts;
-
+    
+    /* 通过配置的标记值on or off，转换成1或0 */
     if (ngx_strcasecmp(value[1].data, (u_char *) "on") == 0) {
         *fp = 1;
 
@@ -1277,7 +1278,7 @@ ngx_conf_set_off_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/* 设置单位为ms的配置项 */
 char *
 ngx_conf_set_msec_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
