@@ -2397,7 +2397,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     clcf = ngx_http_conf_get_module_loc_conf(cf, ngx_http_core_module);
 
-	//设置loc的handler，这个clcf->handler会在ngx_http_update_location_config()里面赋予r->content_handler，
+	//设置handler,这个clcf->handler会在ngx_http_update_location_config()里面赋予r->content_handler，
 	//从而在NGX_HTTP_CONTENT_PHASE里面调用这个handler，即ngx_http_proxy_handler。
     clcf->handler = ngx_http_proxy_handler;
 
@@ -2434,14 +2434,14 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
 #endif
 
-        return NGX_CONF_OK;
+        return NGX_CONF_OK;//脚本编译后，会在具体的content handle中
     }
 
-    if (ngx_strncasecmp(url->data, (u_char *) "http://", 7) == 0) {
+    if (ngx_strncasecmp(url->data, (u_char *) "http://", 7) == 0) {//http协议
         add = 7;
         port = 80;
 
-    } else if (ngx_strncasecmp(url->data, (u_char *) "https://", 8) == 0) {
+    } else if (ngx_strncasecmp(url->data, (u_char *) "https://", 8) == 0) {//https协议
 
 #if (NGX_HTTP_SSL)
         if (ngx_http_proxy_set_ssl(cf, plcf) != NGX_OK) {
@@ -2469,7 +2469,8 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     u.uri_part = 1;
     u.no_resolve = 1;
 
-    plcf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);//添加一个upstream配置信息块
+    /* 添加一个upstream配置项,所有的配置项会在main级别的upstream项里统一保存 */
+    plcf->upstream.upstream = ngx_http_upstream_add(cf, &u, 0);
     if (plcf->upstream.upstream == NULL) {
         return NGX_CONF_ERROR;
     }

@@ -19,16 +19,17 @@
  *    TT        command type, i.e. HTTP "location" or "server" command
  */
 
-#define NGX_CONF_NOARGS      0x00000001
-#define NGX_CONF_TAKE1       0x00000002
-#define NGX_CONF_TAKE2       0x00000004
+ 
+#define NGX_CONF_NOARGS      0x00000001 //无参
+#define NGX_CONF_TAKE1       0x00000002 //1个参数
+#define NGX_CONF_TAKE2       0x00000004 //2个参数
 #define NGX_CONF_TAKE3       0x00000008
 #define NGX_CONF_TAKE4       0x00000010
 #define NGX_CONF_TAKE5       0x00000020
 #define NGX_CONF_TAKE6       0x00000040
 #define NGX_CONF_TAKE7       0x00000080
 
-#define NGX_CONF_MAX_ARGS    8
+#define NGX_CONF_MAX_ARGS    8 //最多支持8个参数
 
 #define NGX_CONF_TAKE12      (NGX_CONF_TAKE1|NGX_CONF_TAKE2)
 #define NGX_CONF_TAKE13      (NGX_CONF_TAKE1|NGX_CONF_TAKE3)
@@ -41,7 +42,7 @@
 
 #define NGX_CONF_ARGS_NUMBER 0x000000ff
 #define NGX_CONF_BLOCK       0x00000100
-#define NGX_CONF_FLAG        0x00000200 //标识配置信息key后面只有1个value值
+#define NGX_CONF_FLAG        0x00000200 //标识配置信息key后面只有1个value值，为标记(flag)
 #define NGX_CONF_ANY         0x00000400
 #define NGX_CONF_1MORE       0x00000800 //标识配置信息key后面有多于1个value值
 #define NGX_CONF_2MORE       0x00001000

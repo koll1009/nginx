@@ -802,6 +802,7 @@ ngx_module_t  ngx_http_core_module = {
 ngx_str_t  ngx_http_core_get_method = { 3, (u_char *) "GET " };
 
 
+
 void
 ngx_http_handler(ngx_http_request_t *r)
 {
@@ -918,7 +919,7 @@ ngx_http_core_rewrite_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 
     rc = ph->handler(r);//调用模块实现的handler函数
 
-    if (rc == NGX_DECLINED) {//执行下一个回调函数，因为phase_handler++,所以
+    if (rc == NGX_DECLINED) {//执行下一个回调函数
         r->phase_handler++;
         return NGX_AGAIN;
     }
@@ -1635,7 +1636,7 @@ ngx_http_core_find_static_location(ngx_http_request_t *r,
             continue;
         }
 
-        if (len == (size_t) node->len) {
+        if (len == (size_t) node->len) {//精确匹配到
 
             if (node->exact) {
                 r->loc_conf = node->exact->loc_conf;
@@ -3130,6 +3131,7 @@ ngx_http_core_create_main_conf(ngx_conf_t *cf)
 }
 
 
+/*  ngx_http_core_module模块的初始化main conf方法  */
 static char *
 ngx_http_core_init_main_conf(ngx_conf_t *cf, void *conf)
 {

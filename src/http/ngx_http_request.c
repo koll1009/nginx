@@ -324,7 +324,7 @@ ngx_http_init_request(ngx_event_t *rev)
          * is required to determine a server address
          */
 
-        if (ngx_connection_local_sockaddr(c, NULL, 0) != NGX_OK) {
+        if (ngx_connection_local_sockaddr(c, NULL, 0) != NGX_OK) {//
             ngx_http_close_connection(c);
             return;
         }
@@ -386,7 +386,7 @@ ngx_http_init_request(ngx_event_t *rev)
         }
     }
 
-    r->virtual_names = addr_conf->virtual_names;
+    r->virtual_names = addr_conf->virtual_names;//虚拟主机名
 
     /* the default server configuration for the address:port */
     cscf = addr_conf->default_server;
@@ -440,7 +440,7 @@ ngx_http_init_request(ngx_event_t *rev)
         c->log->log_level = clcf->error_log->log_level;
     }
 
-    if (c->buffer == NULL) {//创建缓冲区
+    if (c->buffer == NULL) {//创建缓冲区,用于接收http请求头
         c->buffer = ngx_create_temp_buf(c->pool,
                                         cscf->client_header_buffer_size);
         if (c->buffer == NULL) {
@@ -459,7 +459,7 @@ ngx_http_init_request(ngx_event_t *rev)
         return;
     }
 
-
+    //初始化resposne头链表，20个header
     if (ngx_list_init(&r->headers_out.headers, r->pool, 20,
                       sizeof(ngx_table_elt_t))
         != NGX_OK)
@@ -469,6 +469,7 @@ ngx_http_init_request(ngx_event_t *rev)
         return;
     }
 
+    //分配请求对应的http模块配置项
     r->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);
     if (r->ctx == NULL) {
         ngx_destroy_pool(r->pool);
@@ -489,11 +490,11 @@ ngx_http_init_request(ngx_event_t *rev)
     c->single_connection = 1;
     c->destroyed = 0;
 
-    r->main = r;
+    r->main = r;//main request flag
     r->count = 1;
 
     tp = ngx_timeofday();
-    r->start_sec = tp->sec;
+    r->start_sec = tp->sec;//请求的起始时间
     r->start_msec = tp->msec;
 
     r->method = NGX_HTTP_UNKNOWN;
@@ -503,8 +504,8 @@ ngx_http_init_request(ngx_event_t *rev)
     r->headers_out.content_length_n = -1;
     r->headers_out.last_modified_time = -1;
 
-    r->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;
-    r->subrequests = NGX_HTTP_MAX_SUBREQUESTS + 1;
+    r->uri_changes = NGX_HTTP_MAX_URI_CHANGES + 1;//最多改写uri的次数
+    r->subrequests = NGX_HTTP_MAX_SUBREQUESTS + 1;//subrequest的上限数量
 
     r->http_state = NGX_HTTP_READING_REQUEST_STATE;
 
@@ -894,7 +895,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
                 return;
             }
 
-
+            /* 初始化http header列表 */
             if (ngx_list_init(&r->headers_in.headers, r->pool, 20,
                               sizeof(ngx_table_elt_t))
                 != NGX_OK)
@@ -1531,10 +1532,11 @@ ngx_http_process_cookie(ngx_http_request_t *r, ngx_table_elt_t *h,
     return NGX_ERROR;
 }
 
-
+/* 解析万request header后的处理 */
 static ngx_int_t
 ngx_http_process_request_header(ngx_http_request_t *r)
 {
+    //查找主机名对应的配置项
     if (ngx_http_find_virtual_server(r, r->headers_in.server.data,
                                      r->headers_in.server.len)
         == NGX_ERROR)
@@ -1543,6 +1545,7 @@ ngx_http_process_request_header(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
+    //以下为一下合法性检查
     if (r->headers_in.host == NULL && r->http_version > NGX_HTTP_VERSION_10) {
         ngx_log_error(NGX_LOG_INFO, r->connection->log, 0,
                    "client sent HTTP/1.1 request without \"Host\" header");
@@ -1738,6 +1741,7 @@ ngx_http_validate_host(ngx_http_request_t *r, u_char **host, size_t len,
 }
 
 
+/* 搜索虚拟主机名 */
 static ngx_int_t
 ngx_http_find_virtual_server(ngx_http_request_t *r, u_char *host, size_t len)
 {
@@ -1749,7 +1753,7 @@ ngx_http_find_virtual_server(ngx_http_request_t *r, u_char *host, size_t len)
     }
 
     cscf = ngx_hash_find_combined(&r->virtual_names->names,
-                                  ngx_hash_key(host, len), host, len);
+                                  ngx_hash_key(host, len), host, len);//搜索
 
     if (cscf) {
         goto found;
@@ -1791,7 +1795,7 @@ ngx_http_find_virtual_server(ngx_http_request_t *r, u_char *host, size_t len)
 
 found:
 
-    r->srv_conf = cscf->ctx->srv_conf;
+    r->srv_conf = cscf->ctx->srv_conf;//设置请求对应的配置项
     r->loc_conf = cscf->ctx->loc_conf;
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);

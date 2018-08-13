@@ -963,7 +963,7 @@ ngx_drain_connections(void)
     }
 }
 
-
+/* 取监听端口的具体地址 */
 ngx_int_t
 ngx_connection_local_sockaddr(ngx_connection_t *c, ngx_str_t *s,
     ngx_uint_t port)
@@ -1000,6 +1000,7 @@ ngx_connection_local_sockaddr(ngx_connection_t *c, ngx_str_t *s,
 
         len = NGX_SOCKADDRLEN;
 
+        /* 通过监听socket的fd获取地址 */
         if (getsockname(c->fd, (struct sockaddr *) &sa, &len) == -1) {
             ngx_connection_error(c, ngx_socket_errno, "getsockname() failed");
             return NGX_ERROR;

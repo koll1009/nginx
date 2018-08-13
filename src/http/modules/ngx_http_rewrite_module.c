@@ -134,7 +134,7 @@ ngx_module_t  ngx_http_rewrite_module = {
 };
 
 
-/* ngx_http_server_rewrite_module和ngx_http_rewrite_module两个阶段的checker函数 */
+/* ngx_http_server_rewrite_module和ngx_http_rewrite_module两个阶段的handle函数 */
 static ngx_int_t
 ngx_http_rewrite_handler(ngx_http_request_t *r)
 {
@@ -299,12 +299,13 @@ ngx_http_rewrite_init(ngx_conf_t *cf)
         return NGX_ERROR;
     }
 
-    *h = ngx_http_rewrite_handler;
+    *h = ngx_http_rewrite_handler;//重定向的处理函数
 
     return NGX_OK;
 }
 
 
+/* rewrite的解析 */
 static char *
 ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {

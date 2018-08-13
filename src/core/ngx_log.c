@@ -14,6 +14,7 @@ static char *ngx_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 static ngx_command_t  ngx_errlog_commands[] = {
 
+    //错误日志路径
     {ngx_string("error_log"),
      NGX_MAIN_CONF|NGX_CONF_1MORE,
      ngx_error_log,
@@ -428,6 +429,7 @@ ngx_log_set_levels(ngx_conf_t *cf, ngx_log_t *log)
 }
 
 
+/* error_log配置项的解析函数 */
 static char *
 ngx_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -439,14 +441,14 @@ ngx_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
-    if (ngx_strcmp(value[1].data, "stderr") == 0) {
+    if (ngx_strcmp(value[1].data, "stderr") == 0) {//使用标准错误流
         ngx_str_null(&name);
 
     } else {
         name = value[1];
     }
 
-    cf->cycle->new_log.file = ngx_conf_open_file(cf->cycle, &name);
+    cf->cycle->new_log.file = ngx_conf_open_file(cf->cycle, &name);//打开错误日志
     if (cf->cycle->new_log.file == NULL) {
         return NULL;
     }
@@ -458,5 +460,5 @@ ngx_error_log(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     cf->cycle->new_log.log_level = 0;
 
-    return ngx_log_set_levels(cf, &cf->cycle->new_log);
+    return ngx_log_set_levels(cf, &cf->cycle->new_log);//设置错误日志的级别
 }

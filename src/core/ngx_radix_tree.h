@@ -17,20 +17,20 @@
 
 typedef struct ngx_radix_node_s  ngx_radix_node_t;
 
-/* 基数树结点结构体 */
+/* ???????????? */
 struct ngx_radix_node_s {
     ngx_radix_node_t  *right;
     ngx_radix_node_t  *left;
     ngx_radix_node_t  *parent;
-    uintptr_t          value;//值，可以为指针
+    uintptr_t          value;//???????????
 };
 
 
-/* 基数树结构体 */
+/* ?????????? */
 typedef struct {
-    ngx_radix_node_t  *root;//根节点
-    ngx_pool_t        *pool;//内存池
-    ngx_radix_node_t  *free;//空闲结点，使用right指针连接
+    ngx_radix_node_t  *root;//?????
+    ngx_pool_t        *pool;//????
+    ngx_radix_node_t  *free;//???н?????right???????
     char              *start;
     size_t             size;
 } ngx_radix_tree_t;

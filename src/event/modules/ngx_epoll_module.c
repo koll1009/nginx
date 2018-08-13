@@ -389,6 +389,7 @@ ngx_epoll_add_event(ngx_event_t *ev, ngx_int_t event, ngx_uint_t flags)
 
     events = (uint32_t) event;
 
+    /* 通过检查读写状态，来判断是修改还是增加事件 */
     if (event == NGX_READ_EVENT) {
         e = c->write;
         prev = EPOLLOUT;
@@ -498,8 +499,8 @@ ngx_epoll_add_connection(ngx_connection_t *c)
 {
     struct epoll_event  ee;
 
-    ee.events = EPOLLIN|EPOLLOUT|EPOLLET;
-    ee.data.ptr = (void *) ((uintptr_t) c | c->read->instance);
+    ee.events = EPOLLIN|EPOLLOUT|EPOLLET;//事件使用edge trigger，监听读写事件
+    ee.data.ptr = (void *) ((uintptr_t) c | c->read->instance);//事件的data指向connecttion指针，最低位为instance标志位，用来标识被丢弃的http
 
     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, c->log, 0,
                    "epoll add connection: fd:%d ev:%08XD", c->fd, ee.events);
@@ -573,7 +574,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
     events = epoll_wait(ep, event_list, (int) nevents, timer);//取已就绪的事件
 
-    err = (events == -1) ? ngx_errno : 0;
+    err = (events == -1) ? ngx_errno : 0;//返回-1说明有错误发生，其中忽略掉信号中断异常
 
     if (flags & NGX_UPDATE_TIME || ngx_event_timer_alarm) {//更新时间
         ngx_time_update();
@@ -658,7 +659,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
              * active handler
              */
 
-            revents |= EPOLLIN|EPOLLOUT;
+            revents |= EPOLLIN|EPOLLOUT;//把异常放到读、写回调函数里处理，例如read，此时会返回-1（错误）或者0（close）
         }
 
         if ((revents & EPOLLIN) && rev->active) {//有读事件
@@ -683,7 +684,7 @@ ngx_epoll_process_events(ngx_cycle_t *cycle, ngx_msec_t timer, ngx_uint_t flags)
 
         wev = c->write;
 
-        if ((revents & EPOLLOUT) && wev->active) {
+        if ((revents & EPOLLOUT) && wev->active) {//可写事件
 
             if (c->fd == -1 || wev->instance != instance) {
 
@@ -804,7 +805,7 @@ ngx_epoll_eventfd_handler(ngx_event_t *ev)
 
 #endif
 
-
+/* 创建epoll模块的配置结构体 */
 static void *
 ngx_epoll_create_conf(ngx_cycle_t *cycle)
 {
@@ -815,13 +816,13 @@ ngx_epoll_create_conf(ngx_cycle_t *cycle)
         return NULL;
     }
 
-    epcf->events = NGX_CONF_UNSET;
+    epcf->events = NGX_CONF_UNSET;//依次检索的事件数
     epcf->aio_requests = NGX_CONF_UNSET;
 
     return epcf;
 }
 
-
+/* 初始化epoll模块的配置信息 */
 static char *
 ngx_epoll_init_conf(ngx_cycle_t *cycle, void *conf)
 {

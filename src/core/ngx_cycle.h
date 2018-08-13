@@ -76,7 +76,7 @@ typedef struct {
      ngx_flag_t               daemon;//守护进程标志
      ngx_flag_t               master;//主进程标志
 
-     ngx_msec_t               timer_resolution;
+     ngx_msec_t               timer_resolution;//定时器的时间精度
 
      ngx_int_t                worker_processes;//工作进程数
      ngx_int_t                debug_points;
@@ -90,17 +90,17 @@ typedef struct {
      ngx_uint_t               cpu_affinity_n;
      u_long                  *cpu_affinity;
 
-     char                    *username;
+     char                    *username; //work进程的user和group user
      ngx_uid_t                user;
      ngx_gid_t                group;
 
      ngx_str_t                working_directory;
      ngx_str_t                lock_file;
 
-     ngx_str_t                pid;
+     ngx_str_t                pid;//存放master process pid文件的路径
      ngx_str_t                oldpid;
 
-     ngx_array_t              env;//环境数组
+     ngx_array_t              env;//环境变量数组
      char                   **environment;
 
 #if (NGX_THREADS)

@@ -202,7 +202,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
     ngx_uint_t  flags;
     ngx_msec_t  timer, delta;
 
-    if (ngx_timer_resolution) {
+    if (ngx_timer_resolution) { //设置了事件精度
         timer = NGX_TIMER_INFINITE;
         flags = 0;
 
@@ -229,7 +229,7 @@ ngx_process_events_and_timers(ngx_cycle_t *cycle)
             }
 
             if (ngx_accept_mutex_held) {//此标志为1表示进程已经取得了accept锁，所以可以接收连接请求，
-                flags |= NGX_POST_EVENTS;
+                flags |= NGX_POST_EVENTS; //把事件处理放到了process之后，这样可以提前释放锁，提高accept的并发量
 
             } else {//进程没有取得accept锁，把epoll_wait的最长等待时间设为accept的延迟时间
                 if (timer == NGX_TIMER_INFINITE
@@ -597,7 +597,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     if (ccf->master && ccf->worker_processes > 1 && ecf->accept_mutex) {//是否启用负载均衡锁
         ngx_use_accept_mutex = 1;
         ngx_accept_mutex_held = 0;
-        ngx_accept_mutex_delay = ecf->accept_mutex_delay;
+        ngx_accept_mutex_delay = ecf->accept_mutex_delay;//锁的时间
 
     } else {
         ngx_use_accept_mutex = 0;
@@ -623,7 +623,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
             continue;
         }
 
-        module = ngx_modules[m]->ctx;
+        module = ngx_modules[m]->ctx;//事件模块
 
         if (module->actions.init(cycle, ngx_timer_resolution) != NGX_OK) {//调用事件模块的初始化函数
             /* fatal */
@@ -691,7 +691,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
     c = cycle->connections;
 
     cycle->read_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
-                                   cycle->log);
+                                   cycle->log); //读事件
     if (cycle->read_events == NULL) {
         return NGX_ERROR;
     }
@@ -706,6 +706,7 @@ ngx_event_process_init(ngx_cycle_t *cycle)
 #endif
     }
 
+    //统一分配写事件
     cycle->write_events = ngx_alloc(sizeof(ngx_event_t) * cycle->connection_n,
                                     cycle->log);
     if (cycle->write_events == NULL) {

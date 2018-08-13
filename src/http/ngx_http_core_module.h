@@ -213,7 +213,7 @@ typedef struct {
 
 typedef struct {
     /* the default server configuration for this address:port */
-    ngx_http_core_srv_conf_t  *default_server;
+    ngx_http_core_srv_conf_t  *default_server;//默认配置项
 
     ngx_http_virtual_names_t  *virtual_names;/* ip:port对应的所有server_name */
 
@@ -223,7 +223,7 @@ typedef struct {
 } ngx_http_addr_conf_t;
 
 
-
+/* listening结构中保存的监听地址 */
 typedef struct {
     in_addr_t                  addr;//ip地址，numberic类型
     ngx_http_addr_conf_t       conf;//改server地址对应的配置信息
@@ -248,14 +248,14 @@ typedef struct {
 
 /* 监听端口管理器，每个端口对应n个地址，每个地址对应n个server{}配置项 */
 typedef struct {
-    ngx_int_t                  family;
-    in_port_t                  port;
-    ngx_array_t                addrs;     /* array of ngx_http_conf_addr_t */
+    ngx_int_t                  family;//协议族
+    in_port_t                  port;//端口号
+    ngx_array_t                addrs;     /* 地址数组 array of ngx_http_conf_addr_t */
 } ngx_http_conf_port_t;
 
 
 typedef struct {
-    ngx_http_listen_opt_t      opt;
+    ngx_http_listen_opt_t      opt;//监听选项
 
     ngx_hash_t                 hash;//ip:port对应的server{}下server_name:ngx_http_core_srv_conf_t**哈希表
     ngx_hash_wildcard_t       *wc_head;//ip:port对应的server{}下server_nam(前置通配符）e:ngx_http_core_srv_conf_t**哈希表
@@ -267,7 +267,7 @@ typedef struct {
 #endif
 
     /* the default server configuration for this address:port */
-    ngx_http_core_srv_conf_t  *default_server;
+    ngx_http_core_srv_conf_t  *default_server;//默认配置项
     ngx_array_t                servers;  /* array of ngx_http_core_srv_conf_t */
 } ngx_http_conf_addr_t;
 
@@ -333,7 +333,7 @@ struct ngx_http_core_loc_conf_s {
     uint32_t      limit_except;
     void        **limit_except_loc_conf;
 
-    ngx_http_handler_pt  handler;
+    ngx_http_handler_pt  handler;//content phase的处理函数
 
     /* location name length for inclusive location with inherited alias */
     size_t        alias;
