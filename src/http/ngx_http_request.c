@@ -1872,6 +1872,7 @@ ngx_http_run_posted_requests(ngx_connection_t *c)
 }
 
 
+/* 把子请求插入到原始请求的链表中 */
 ngx_int_t
 ngx_http_post_request(ngx_http_request_t *r, ngx_http_posted_request_t *pr)
 {
