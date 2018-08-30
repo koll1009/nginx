@@ -1628,7 +1628,7 @@ failed:
     return NGX_ERROR;
 }
 
-/* http addr大小比较函数，排序后，每个端口对应的地址排列顺序为 */
+/* http addr大小比较函数，排序后，每个端口对应的地址排列顺序为显示bind在前，通配符在后 */
 static ngx_int_t
 ngx_http_cmp_conf_addrs(const void *one, const void *two)
 {
@@ -1749,7 +1749,7 @@ ngx_http_init_listening(ngx_conf_t *cf, ngx_http_conf_port_t *port)
     return NGX_OK;
 }
 
-/* 添加监听 */
+/* 创建监听对象 */
 static ngx_listening_t *
 ngx_http_add_listening(ngx_conf_t *cf, ngx_http_conf_addr_t *addr)
 {
@@ -1853,6 +1853,7 @@ ngx_http_add_addrs(ngx_conf_t *cf, ngx_http_port_t *hport,
             continue;
         }
 
+        //设置域名哈希表
         vn = ngx_palloc(cf->pool, sizeof(ngx_http_virtual_names_t));
         if (vn == NULL) {
             return NGX_ERROR;

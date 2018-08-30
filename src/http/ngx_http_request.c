@@ -311,7 +311,7 @@ ngx_http_init_request(ngx_event_t *rev)
 
     /* find the server configuration for the address:port */
 
-    port = c->listening->servers;
+    port = c->listening->servers;//
 
     r->connection = c;
 
@@ -324,7 +324,7 @@ ngx_http_init_request(ngx_event_t *rev)
          * is required to determine a server address
          */
 
-        if (ngx_connection_local_sockaddr(c, NULL, 0) != NGX_OK) {//
+        if (ngx_connection_local_sockaddr(c, NULL, 0) != NGX_OK) {//取本地地址
             ngx_http_close_connection(c);
             return;
         }

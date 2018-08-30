@@ -320,6 +320,7 @@ ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_http_script_regex_end_code_t  *regex_end;
     u_char                             errstr[NGX_MAX_CONF_ERRSTR];
 
+    //新建一个正则脚本
     regex = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                        sizeof(ngx_http_script_regex_code_t));
     if (regex == NULL) {
@@ -332,20 +333,20 @@ ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_memzero(&rc, sizeof(ngx_regex_compile_t));
 
-    rc.pattern = value[1];
+    rc.pattern = value[1];//参数1为正则表达式
     rc.err.len = NGX_MAX_CONF_ERRSTR;
     rc.err.data = errstr;
 
     /* TODO: NGX_REGEX_CASELESS */
 
-    regex->regex = ngx_http_regex_compile(cf, &rc);
+    regex->regex = ngx_http_regex_compile(cf, &rc);//编译正则式
     if (regex->regex == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    regex->code = ngx_http_script_regex_start_code;
+    regex->code = ngx_http_script_regex_start_code;//正则脚本的指令代码
     regex->uri = 1;
-    regex->name = value[1];
+    regex->name = value[1];//正则表达式字符串
 
     if (value[2].data[value[2].len - 1] == '?') {
 
@@ -398,7 +399,7 @@ ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     sc.source = &value[2];
     sc.lengths = &regex->lengths;
     sc.values = &lcf->codes;
-    sc.variables = ngx_http_script_variables_count(&value[2]);
+    sc.variables = ngx_http_script_variables_count(&value[2]);//变量数
     sc.main = regex;
     sc.complete_lengths = 1;
     sc.compile_args = !regex->redirect;

@@ -345,7 +345,7 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
 
     v = cmcf->variables.elts;
 
-    if (v == NULL) {//初始化变量索引数组
+    if (v == NULL) {//初始化变量数组
         if (ngx_array_init(&cmcf->variables, cf->pool, 4,
                            sizeof(ngx_http_variable_t))
             != NGX_OK)
@@ -354,7 +354,7 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
         }
 
     } else {
-        for (i = 0; i < cmcf->variables.nelts; i++) {//查重
+        for (i = 0; i < cmcf->variables.nelts; i++) {//通过变量名，查索引
             if (name->len != v[i].name.len
                 || ngx_strncasecmp(name->data, v[i].name.data, name->len) != 0)
             {
@@ -365,7 +365,7 @@ ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
         }
     }
 
-	/* 添加到索引数组中 */
+	/* 未知变量名，添加到索引数组 */
     v = ngx_array_push(&cmcf->variables);
     if (v == NULL) {
         return NGX_ERROR;
@@ -404,7 +404,7 @@ ngx_http_get_indexed_variable(ngx_http_request_t *r, ngx_uint_t index)
         return NULL;
     }
 
-	//request结构中缓存着已索引的数组，not_flag和valid标志代表着变量已经解析过，所以直接返回
+	//request结构中缓存着已索引的变量数组，not_found和valid标志代表着变量已经解析过，所以直接返回
     if (r->variables[index].not_found || r->variables[index].valid) {
         return &r->variables[index];
     }
@@ -1857,7 +1857,7 @@ ngx_http_regex_exec(ngx_http_request_t *r, ngx_http_regex_t *re, ngx_str_t *s)
         len = 0;
     }
 
-    rc = ngx_regex_exec(re->regex, s, r->captures, len);
+    rc = ngx_regex_exec(re->regex, s, r->captures, len);//执行正则匹配
 
     if (rc == NGX_REGEX_NO_MATCHED) {
         return NGX_DECLINED;

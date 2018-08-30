@@ -2470,6 +2470,7 @@ ngx_http_subrequest(ngx_http_request_t *r,
 }
 
 
+
 ngx_int_t
 ngx_http_internal_redirect(ngx_http_request_t *r,
     ngx_str_t *uri, ngx_str_t *args)
@@ -3701,7 +3702,7 @@ ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             continue;
         }
 
-        if (ngx_strcmp(value[n].data, "bind") == 0) {//显示绑定标志
+        if (ngx_strcmp(value[n].data, "bind") == 0) {//显式绑定标志
             lsopt.set = 1;
             lsopt.bind = 1;
             continue;

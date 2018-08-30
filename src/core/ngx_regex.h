@@ -23,7 +23,7 @@ typedef pcre  ngx_regex_t;
 
 
 typedef struct {
-    ngx_str_t     pattern;
+    ngx_str_t     pattern;//±Ì¥Ô Ω
     ngx_pool_t   *pool;
     ngx_int_t     options;
 

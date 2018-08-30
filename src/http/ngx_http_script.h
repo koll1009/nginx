@@ -202,7 +202,7 @@ typedef struct {
 /* 脚本指令中变量值结构体 */
 typedef struct {
     ngx_http_script_code_pt     code;//编译变量名的函数指针
-    uintptr_t                   value;
+    uintptr_t                   value;//整型值
     uintptr_t                   text_len;//变量值的长度
     uintptr_t                   text_data;//变量值的地址
 } ngx_http_script_value_code_t;

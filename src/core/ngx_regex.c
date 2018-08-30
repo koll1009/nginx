@@ -15,7 +15,7 @@ static void ngx_libc_cdecl ngx_regex_free(void *p);
 
 static ngx_pool_t  *ngx_pcre_pool;
 
-
+//初始化正则表达式模块
 void
 ngx_regex_init(void)
 {
@@ -70,6 +70,7 @@ ngx_regex_compile(ngx_regex_compile_t *rc)
 
     ngx_regex_malloc_init(rc->pool);
 
+    //正则表达式编译
     re = pcre_compile((const char *) rc->pattern.data, (int) rc->options,
                       &errstr, &erroff, NULL);
 
@@ -169,7 +170,7 @@ ngx_regex_exec_array(ngx_array_t *a, ngx_str_t *s, ngx_log_t *log)
     return NGX_DECLINED;
 }
 
-
+/* 分配内存 */
 static void * ngx_libc_cdecl
 ngx_regex_malloc(size_t size)
 {

@@ -90,7 +90,7 @@ typedef struct {
     unsigned                  one_addr:1;//标志位，只取一个host对应的ip地址
 
     unsigned                  no_port:1;
-    unsigned                  wildcard:1;//通配符标记
+    unsigned                  wildcard:1;//通配符标记，代表只有端口
 
     socklen_t                 socklen;//sockaddr字段使用的长度
     u_char                    sockaddr[NGX_SOCKADDRLEN];//用来存储socket地址
