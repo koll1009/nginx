@@ -27,7 +27,7 @@ typedef struct {
     u_char                     *args;//参数为止
 
     unsigned                    flushed:1;
-    unsigned                    skip:1;
+    unsigned                    skip:1;//是否跳过
     unsigned                    quote:1;
     unsigned                    is_args:1;
     unsigned                    log:1;
@@ -47,8 +47,8 @@ typedef struct {
     ngx_array_t               **values;//存放指令
 
     ngx_uint_t                  variables;//变量数目
-    ngx_uint_t                  ncaptures;
-    ngx_uint_t                  captures_mask;
+    ngx_uint_t                  ncaptures;//捕获的数量
+    ngx_uint_t                  captures_mask;//正则表达式捕获掩码，例如变量为$1,则第一位置1，执行脚本时会从正则表达式执行结果取第一个捕获
     ngx_uint_t                  size;
 
     void                       *main;
@@ -116,9 +116,10 @@ typedef struct {
 
 #if (NGX_PCRE)
 
+//带正则表达式的指令
 typedef struct {
-    ngx_http_script_code_pt     code;
-    ngx_http_regex_t           *regex;
+    ngx_http_script_code_pt     code;//指令
+    ngx_http_regex_t           *regex;//编译后的正则式
     ngx_array_t                *lengths;
     uintptr_t                   size;
     uintptr_t                   status;

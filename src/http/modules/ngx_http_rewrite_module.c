@@ -305,7 +305,7 @@ ngx_http_rewrite_init(ngx_conf_t *cf)
 }
 
 
-/* rewrite的解析 */
+/* rewrite的解析，重定向地址 */
 static char *
 ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -320,7 +320,7 @@ ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_http_script_regex_end_code_t  *regex_end;
     u_char                             errstr[NGX_MAX_CONF_ERRSTR];
 
-    //新建一个正则脚本
+    //新建一个正则脚本指令
     regex = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                        sizeof(ngx_http_script_regex_code_t));
     if (regex == NULL) {
@@ -344,8 +344,8 @@ ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    regex->code = ngx_http_script_regex_start_code;//正则脚本的指令代码
-    regex->uri = 1;
+    regex->code = ngx_http_script_regex_start_code;//正则指令代码
+    regex->uri = 1;//匹配uri
     regex->name = value[1];//正则表达式字符串
 
     if (value[2].data[value[2].len - 1] == '?') {
@@ -396,15 +396,15 @@ ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_memzero(&sc, sizeof(ngx_http_script_compile_t));
 
     sc.cf = cf;
-    sc.source = &value[2];
-    sc.lengths = &regex->lengths;
-    sc.values = &lcf->codes;
+    sc.source = &value[2];//含有变量的脚本字符串
+    sc.lengths = &regex->lengths;//长度指令组
+    sc.values = &lcf->codes;//指令组
     sc.variables = ngx_http_script_variables_count(&value[2]);//变量数
     sc.main = regex;
     sc.complete_lengths = 1;
     sc.compile_args = !regex->redirect;
 
-    if (ngx_http_script_compile(&sc) != NGX_OK) {
+    if (ngx_http_script_compile(&sc) != NGX_OK) {//编译重定向的地址
         return NGX_CONF_ERROR;
     }
 
@@ -967,6 +967,7 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/* 重写变量值 */
 static char *
 ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     ngx_str_t *value)
@@ -978,7 +979,7 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
 
     n = ngx_http_script_variables_count(value);//计算字符串中变量的个数
 
-    if (n == 0) {//值字符串中没有引用其他变量
+    if (n == 0) {//变量值中没有引用其他变量
         val = ngx_http_script_start_code(cf->pool, &lcf->codes,
                                          sizeof(ngx_http_script_value_code_t));
         if (val == NULL) {
@@ -1005,7 +1006,7 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     if (complex == NULL) {
         return NGX_CONF_ERROR;
     }
-
+  
     complex->code = ngx_http_script_complex_value_code;
     complex->lengths = NULL;
 

@@ -364,11 +364,11 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
 
                 n = sc->source->data[i] - '0';//计算$符后跟的数字
 
-                if (sc->captures_mask & (1 << n)) {
+                if (sc->captures_mask & (1 << n)) {//如果是标记过已经添加过的
                     sc->dup_capture = 1;
                 }
 
-                sc->captures_mask |= 1 << n;//添加铺货标记
+                sc->captures_mask |= 1 << n;//添加capture标记
 
                 if (ngx_http_script_add_capture_code(sc, n) != NGX_OK) {
                     return NGX_ERROR;
@@ -675,7 +675,7 @@ ngx_http_script_add_code(ngx_array_t *codes, size_t size, void *code)
     }
 
     if (code) {
-        if (elts != codes->elts) {//数组有扩展
+        if (elts != codes->elts) { //说明指令数组有扩展，所以需要修复之前的代码指针
             p = code;
             *p += (u_char *) codes->elts - elts;
         }
@@ -767,14 +767,14 @@ ngx_http_script_copy_code(ngx_http_script_engine_t *e)
 }
 
 
-/* 添加一条变量脚本指令 */
+/* 添加一条脚本的变量指令 */
 static ngx_int_t
 ngx_http_script_add_var_code(ngx_http_script_compile_t *sc, ngx_str_t *name)
 {
     ngx_int_t                    index, *p;
     ngx_http_script_var_code_t  *code;
 
-    index = ngx_http_get_variable_index(sc->cf, name);//索引该变量
+    index = ngx_http_get_variable_index(sc->cf, name);//索引变量
 
     if (index == NGX_ERROR) {
         return NGX_ERROR;
@@ -788,16 +788,18 @@ ngx_http_script_add_var_code(ngx_http_script_compile_t *sc, ngx_str_t *name)
 
         *p = index;
     }
-
+    
+    //添加一个脚本的变量指令使用结构体，用来计算该使用的内存长度
     code = ngx_http_script_add_code(*sc->lengths,
-                                    sizeof(ngx_http_script_var_code_t), NULL);//添加一个变量代码结构
+                                    sizeof(ngx_http_script_var_code_t), NULL);
     if (code == NULL) {
         return NGX_ERROR;
     }
 
     code->code = (ngx_http_script_code_pt) ngx_http_script_copy_var_len_code;//解析变量值长度的指令
     code->index = (uintptr_t) index;
-
+    
+    //添加copy变量值的指令
     code = ngx_http_script_add_code(*sc->values,
                                     sizeof(ngx_http_script_var_code_t),
                                     &sc->main);
@@ -820,8 +822,9 @@ ngx_http_script_copy_var_len_code(ngx_http_script_engine_t *e)
 
     code = (ngx_http_script_var_code_t *) e->ip;
 
-    e->ip += sizeof(ngx_http_script_var_code_t);//指令指针递加
+    e->ip += sizeof(ngx_http_script_var_code_t);//指向下一条指令对应的结构体
 
+    //取变量
     if (e->flushed) {
         value = ngx_http_get_indexed_variable(e->request, code->index);
 
@@ -829,6 +832,7 @@ ngx_http_script_copy_var_len_code(ngx_http_script_engine_t *e)
         value = ngx_http_get_flushed_variable(e->request, code->index);
     }
 
+    //返回变量值的长度
     if (value && !value->not_found) {
         return value->len;
     }
@@ -936,14 +940,14 @@ ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
                    "http script regex: \"%V\"", &code->name);
 
     if (code->uri) {
-        e->line = r->uri;
+        e->line = r->uri;//取请求的uri地址
     } else {
         e->sp--;
         e->line.len = e->sp->len;
         e->line.data = e->sp->data;
     }
 
-    rc = ngx_http_regex_exec(r, code->regex, &e->line);
+    rc = ngx_http_regex_exec(r, code->regex, &e->line);//执行正则匹配
 
     if (rc == NGX_DECLINED) {
         if (e->log || (r->connection->log->log_level & NGX_LOG_DEBUG_HTTP)) {
@@ -1011,7 +1015,7 @@ ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
     }
 
     if (code->uri) {
-        r->internal = 1;
+        r->internal = 1; //设置内部跳转
         r->valid_unparsed_uri = 0;
 
         if (code->break_cycle) {
@@ -1039,7 +1043,7 @@ ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
 
     } else {
         ngx_memzero(&le, sizeof(ngx_http_script_engine_t));
-
+        //执行指令，计算跳转url需要的长度
         le.ip = code->lengths->elts;
         le.line = e->line;
         le.request = r;
@@ -1060,7 +1064,7 @@ ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
         e->buf.len += r->args.len + 1;
     }
 
-    e->buf.data = ngx_pnalloc(r->pool, e->buf.len);
+    e->buf.data = ngx_pnalloc(r->pool, e->buf.len);//分配空间
     if (e->buf.data == NULL) {
         e->ip = ngx_http_script_exit;
         e->status = NGX_HTTP_INTERNAL_SERVER_ERROR;
@@ -1179,6 +1183,7 @@ ngx_http_script_regex_end_code(ngx_http_script_engine_t *e)
 }
 
 
+/* 脚本添加捕获指令 */
 static ngx_int_t
 ngx_http_script_add_capture_code(ngx_http_script_compile_t *sc, ngx_uint_t n)
 {
@@ -1192,7 +1197,7 @@ ngx_http_script_add_capture_code(ngx_http_script_compile_t *sc, ngx_uint_t n)
     }
 
     code->code = (ngx_http_script_code_pt)
-                      ngx_http_script_copy_capture_len_code;
+                      ngx_http_script_copy_capture_len_code;//计算长度
     code->n = 2 * n;
 
 
@@ -1214,6 +1219,7 @@ ngx_http_script_add_capture_code(ngx_http_script_compile_t *sc, ngx_uint_t n)
 }
 
 
+/* 计算要copy的捕获的变量值的长度 */
 size_t
 ngx_http_script_copy_capture_len_code(ngx_http_script_engine_t *e)
 {
@@ -1231,7 +1237,7 @@ ngx_http_script_copy_capture_len_code(ngx_http_script_engine_t *e)
 
     n = code->n;
 
-    if (n < r->ncaptures) {
+    if (n < r->ncaptures) {//捕获变量要在索引内
 
         cap = r->captures;
 
@@ -1621,14 +1627,14 @@ ngx_http_script_complex_value_code(ngx_http_script_engine_t *e)
 
     code = (ngx_http_script_complex_value_code_t *) e->ip;
 
-    e->ip += sizeof(ngx_http_script_complex_value_code_t);
+    e->ip += sizeof(ngx_http_script_complex_value_code_t);//指令递加
 
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, e->request->connection->log, 0,
                    "http script complex value");
 
     ngx_memzero(&le, sizeof(ngx_http_script_engine_t));
 
-    le.ip = code->lengths->elts;
+    le.ip = code->lengths->elts;//指向求长度指令
     le.line = e->line;
     le.request = e->request;
     le.quote = e->quote;
@@ -1653,7 +1659,7 @@ ngx_http_script_complex_value_code(ngx_http_script_engine_t *e)
 }
 
 
-/*  */
+/* 取值指令 */
 void
 ngx_http_script_value_code(ngx_http_script_engine_t *e)
 {
@@ -1661,10 +1667,10 @@ ngx_http_script_value_code(ngx_http_script_engine_t *e)
 
     code = (ngx_http_script_value_code_t *) e->ip;
 
-    e->ip += sizeof(ngx_http_script_value_code_t);
+    e->ip += sizeof(ngx_http_script_value_code_t);//指令递加
 
     e->sp->len = code->text_len;
-    e->sp->data = (u_char *) code->text_data;
+    e->sp->data = (u_char *) code->text_data; //
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, e->request->connection->log, 0,
                    "http script value: \"%v\"", e->sp);
