@@ -1784,7 +1784,7 @@ ngx_http_regex_compile(ngx_conf_t *cf, ngx_regex_compile_t *rc)
         return NULL;
     }
 
-    re->regex = rc->regex;
+    re->regex = rc->regex;//编译后
     re->ncaptures = rc->captures;
 
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
@@ -1801,7 +1801,7 @@ ngx_http_regex_compile(ngx_conf_t *cf, ngx_regex_compile_t *rc)
         return NULL;
     }
 
-    re->variables = rv;
+    re->variables = rv;//变量数组和数量
     re->nvariables = n;
     re->name = rc->pattern;
 
@@ -1833,6 +1833,7 @@ ngx_http_regex_compile(ngx_conf_t *cf, ngx_regex_compile_t *rc)
 }
 
 
+/* 执行正则匹配过程 */
 ngx_int_t
 ngx_http_regex_exec(ngx_http_request_t *r, ngx_http_regex_t *re, ngx_str_t *s)
 {
@@ -1847,7 +1848,7 @@ ngx_http_regex_exec(ngx_http_request_t *r, ngx_http_regex_t *re, ngx_str_t *s)
         len = cmcf->ncaptures;
 
         if (r->captures == NULL) {
-            r->captures = ngx_palloc(r->pool, len * sizeof(int));
+            r->captures = ngx_palloc(r->pool, len * sizeof(int));//分配capture数组
             if (r->captures == NULL) {
                 return NGX_ERROR;
             }
@@ -1857,7 +1858,7 @@ ngx_http_regex_exec(ngx_http_request_t *r, ngx_http_regex_t *re, ngx_str_t *s)
         len = 0;
     }
 
-    rc = ngx_regex_exec(re->regex, s, r->captures, len);//执行正则匹配
+    rc = ngx_regex_exec(re->regex, s, r->captures, len);//正则匹配函数
 
     if (rc == NGX_REGEX_NO_MATCHED) {
         return NGX_DECLINED;
@@ -1870,6 +1871,7 @@ ngx_http_regex_exec(ngx_http_request_t *r, ngx_http_regex_t *re, ngx_str_t *s)
         return NGX_ERROR;
     }
 
+    //使用正则匹配到的值替换掉变量里的代替符
     for (i = 0; i < re->nvariables; i++) {
 
         n = re->variables[i].capture;

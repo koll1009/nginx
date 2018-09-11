@@ -90,10 +90,10 @@ typedef struct {
     ngx_array_t      *dns_wc_tail_hash;
 } ngx_hash_keys_arrays_t;
 
-
+//哈希表节点
 typedef struct {
     ngx_uint_t        hash;//哈希值
-    ngx_str_t         key;
+    ngx_str_t         key; 
     ngx_str_t         value;
     u_char           *lowcase_key;
 } ngx_table_elt_t;

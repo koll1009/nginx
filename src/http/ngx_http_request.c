@@ -480,7 +480,7 @@ ngx_http_init_request(ngx_event_t *rev)
     cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
     r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts
-                                        * sizeof(ngx_http_variable_value_t));//为内置变量分配空间
+                                        * sizeof(ngx_http_variable_value_t));//分配索引话的变量空间
     if (r->variables == NULL) {
         ngx_destroy_pool(r->pool);
         ngx_http_close_connection(c);
@@ -735,7 +735,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
     for ( ;; ) {
 
         if (rc == NGX_AGAIN) {
-            n = ngx_http_read_request_header(r);//读取http请求数据
+            n = ngx_http_read_request_header(r);//读取http请求头的数据
 
             if (n == NGX_AGAIN || n == NGX_ERROR) {//返回ngx_again表示
                 return;
@@ -748,10 +748,11 @@ ngx_http_process_request_line(ngx_event_t *rev)
 
             /* the request line has been parsed successfully */
 
-            r->request_line.len = r->request_end - r->request_start;//设置请求行字符串
+            //设置http 请求行字符串的地址和长度
+            r->request_line.len = r->request_end - r->request_start;
             r->request_line.data = r->request_start;
 
-			//设置请求path字符串
+			//设置uri属性
             if (r->args_start) {
                 r->uri.len = r->args_start - 1 - r->uri_start;
             } else {
@@ -787,11 +788,12 @@ ngx_http_process_request_line(ngx_event_t *rev)
             r->unparsed_uri.data = r->uri_start;
 
             r->valid_unparsed_uri = r->space_in_uri ? 0 : 1;
-
-            r->method_name.len = r->method_end - r->request_start + 1;//设置method字符串
+            
+            //设置method属性
+            r->method_name.len = r->method_end - r->request_start + 1;
             r->method_name.data = r->request_line.data;
 
-
+            //协议版本号
             if (r->http_protocol.data) {
                 r->http_protocol.len = r->request_end - r->http_protocol.data;
             }
@@ -807,7 +809,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
                 r->exten.data = r->uri_ext;
             }
 
-
+            //query string参数
             if (r->args_start && r->uri_end > r->args_start) {
                 r->args.len = r->uri_end - r->args_start;
                 r->args.data = r->args_start;
@@ -1085,6 +1087,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
                 ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
             }
 
+            
             hh = ngx_hash_find(&cmcf->headers_in_hash, h->hash,
                                h->lowcase_key, h->key.len);//从全局head哈希表中搜索
 
@@ -1158,7 +1161,7 @@ ngx_http_read_request_header(ngx_http_request_t *r)
         return n;
     }
 
-    if (rev->ready) {
+    if (rev->ready) {// epoll中有可读事件
         n = c->recv(c, r->header_in->last,
                     r->header_in->end - r->header_in->last);//读取数据
     } else {
@@ -1168,10 +1171,10 @@ ngx_http_read_request_header(ngx_http_request_t *r)
     if (n == NGX_AGAIN) {
         if (!rev->timer_set) {
             cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
-            ngx_add_timer(rev, cscf->client_header_timeout);
+            ngx_add_timer(rev, cscf->client_header_timeout);//设置接收http header的超时时间
         }
 
-        if (ngx_handle_read_event(rev, 0) != NGX_OK) {
+        if (ngx_handle_read_event(rev, 0) != NGX_OK) {//设置事件可读
             ngx_http_close_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
             return NGX_ERROR;
         }
@@ -1179,7 +1182,7 @@ ngx_http_read_request_header(ngx_http_request_t *r)
         return NGX_AGAIN;
     }
 
-    if (n == 0) {
+    if (n == 0) {//客户端发送了fin字节
         ngx_log_error(NGX_LOG_INFO, c->log, 0,
                       "client closed prematurely connection");
     }
@@ -1192,7 +1195,7 @@ ngx_http_read_request_header(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    r->header_in->last += n;
+    r->header_in->last += n;//设置缓存区的空闲地址
 
     return n;
 }

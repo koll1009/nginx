@@ -397,7 +397,7 @@ ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     sc.cf = cf;
     sc.source = &value[2];//含有变量的脚本字符串
-    sc.lengths = &regex->lengths;//长度指令组
+    sc.lengths = &regex->lengths;//长度指令组,存着计算value值的length指令
     sc.values = &lcf->codes;//指令组
     sc.variables = ngx_http_script_variables_count(&value[2]);//变量数
     sc.main = regex;

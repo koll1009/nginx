@@ -216,7 +216,7 @@ typedef struct {
     ngx_str_t                         user;
     ngx_str_t                         passwd;
 
-    ngx_array_t                       cookies;
+    ngx_array_t                       cookies; //请求里的cookie数组
 
     ngx_str_t                         server;//head里的host value
     off_t                             content_length_n;

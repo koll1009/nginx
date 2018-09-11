@@ -510,7 +510,7 @@ ngx_http_script_run(ngx_http_request_t *r, ngx_str_t *value,
 
     ngx_memzero(&e, sizeof(ngx_http_script_engine_t));
 
-    e.ip = code_lengths;
+    e.ip = code_lengths;//指令指针指向计算长度的指令组
     e.request = r;
     e.flushed = 1;
 
@@ -521,7 +521,7 @@ ngx_http_script_run(ngx_http_request_t *r, ngx_str_t *value,
 
 
     value->len = len;
-    value->data = ngx_pnalloc(r->pool, len);
+    value->data = ngx_pnalloc(r->pool, len); //分配value所需的内存
     if (value->data == NULL) {
         return NULL;
     }
@@ -934,7 +934,7 @@ ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
 
     code = (ngx_http_script_regex_code_t *) e->ip;
 
-    r = e->request;
+    r = e->request;//取request
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http script regex: \"%V\"", &code->name);
@@ -947,7 +947,7 @@ ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
         e->line.data = e->sp->data;
     }
 
-    rc = ngx_http_regex_exec(r, code->regex, &e->line);//执行正则匹配
+    rc = ngx_http_regex_exec(r, code->regex, &e->line);//执行正则匹配，并更新变量表
 
     if (rc == NGX_DECLINED) {
         if (e->log || (r->connection->log->log_level & NGX_LOG_DEBUG_HTTP)) {
@@ -1075,10 +1075,7 @@ ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
 
     e->pos = e->buf.data;
 
-    e->ip += sizeof(ngx_http_script_regex_code_t);
-}
-
-
+    e->ip += sizeof(ngx_http_script_regex_c
 void
 ngx_http_script_regex_end_code(ngx_http_script_engine_t *e)
 {
@@ -1101,7 +1098,7 @@ ngx_http_script_regex_end_code(ngx_http_script_engine_t *e)
         src = e->buf.data;
 
         ngx_unescape_uri(&dst, &src, e->pos - e->buf.data,
-                         NGX_UNESCAPE_REDIRECT);
+                         NGX_UNESCAPE_REDIRECT);//
 
         if (src < e->pos) {
             dst = ngx_movemem(dst, src, e->pos - src);
