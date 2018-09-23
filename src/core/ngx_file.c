@@ -14,6 +14,7 @@ ngx_atomic_t         *ngx_temp_number = &temp_number;
 ngx_atomic_int_t      ngx_random_number = 123456;
 
 
+/* 把缓存链中的数据写道临时文件中 */
 ssize_t
 ngx_write_chain_to_temp_file(ngx_temp_file_t *tf, ngx_chain_t *chain)
 {
@@ -49,7 +50,7 @@ ngx_create_temp_file(ngx_file_t *file, ngx_path_t *path, ngx_pool_t *pool,
 
     file->name.len = path->name.len + 1 + path->len + 10;
 
-    file->name.data = ngx_pnalloc(pool, file->name.len + 1);
+    file->name.data = ngx_pnalloc(pool, file->name.len + 1);//分配内存保存文件名
     if (file->name.data == NULL) {
         return NGX_ERROR;
     }
@@ -64,12 +65,13 @@ ngx_create_temp_file(ngx_file_t *file, ngx_path_t *path, ngx_pool_t *pool,
 
     n = (uint32_t) ngx_next_temp_number(0);
 
-    cln = ngx_pool_cleanup_add(pool, sizeof(ngx_pool_cleanup_file_t));
+    cln = ngx_pool_cleanup_add(pool, sizeof(ngx_pool_cleanup_file_t));//添加到pool的自动清理链表中
     if (cln == NULL) {
         return NGX_ERROR;
     }
 
     for ( ;; ) {
+		//构造文件名
         (void) ngx_sprintf(file->name.data + path->name.len + 1 + path->len,
                            "%010uD%Z", n);
 

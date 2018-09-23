@@ -261,7 +261,7 @@ ngx_http_init_request(ngx_event_t *rev)
     (void) ngx_atomic_fetch_add(ngx_stat_reading, -1);
 #endif
 
-    c = rev->data;
+    c = rev->data; 
 
     if (rev->timedout) {//如果超时前仍未收到数据，则关闭连接
         ngx_log_error(NGX_LOG_INFO, c->log, NGX_ETIMEDOUT, "client timed out");
@@ -311,7 +311,7 @@ ngx_http_init_request(ngx_event_t *rev)
 
     /* find the server configuration for the address:port */
 
-    port = c->listening->servers;//
+    port = c->listening->servers;//取监听服务器的端口信息
 
     r->connection = c;
 
@@ -324,7 +324,7 @@ ngx_http_init_request(ngx_event_t *rev)
          * is required to determine a server address
          */
 
-        if (ngx_connection_local_sockaddr(c, NULL, 0) != NGX_OK) {//取本地地址
+        if (ngx_connection_local_sockaddr(c, NULL, 0) != NGX_OK) {//取服务端socket地址
             ngx_http_close_connection(c);
             return;
         }
@@ -356,7 +356,7 @@ ngx_http_init_request(ngx_event_t *rev)
             addr = port->addrs;
 
             /* the last address is "*" */
-
+			/* 搜索，取相应的配置信息 */
             for (i = 0; i < port->naddrs - 1; i++) {
                 if (addr[i].addr == sin->sin_addr.s_addr) {
                     break;
@@ -469,7 +469,7 @@ ngx_http_init_request(ngx_event_t *rev)
         return;
     }
 
-    //分配请求对应的http模块配置项
+    //分配请求对应的http模块上下文
     r->ctx = ngx_pcalloc(r->pool, sizeof(void *) * ngx_http_max_module);
     if (r->ctx == NULL) {
         ngx_destroy_pool(r->pool);
@@ -480,7 +480,7 @@ ngx_http_init_request(ngx_event_t *rev)
     cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
 
     r->variables = ngx_pcalloc(r->pool, cmcf->variables.nelts
-                                        * sizeof(ngx_http_variable_value_t));//分配索引话的变量空间
+                                        * sizeof(ngx_http_variable_value_t));//分配索引化的变量空间
     if (r->variables == NULL) {
         ngx_destroy_pool(r->pool);
         ngx_http_close_connection(c);
@@ -494,7 +494,7 @@ ngx_http_init_request(ngx_event_t *rev)
     r->count = 1;
 
     tp = ngx_timeofday();
-    r->start_sec = tp->sec;//请求的起始时间
+    r->start_sec = tp->sec;//请求的起始时间秒和毫秒数
     r->start_msec = tp->msec;
 
     r->method = NGX_HTTP_UNKNOWN;
@@ -735,7 +735,7 @@ ngx_http_process_request_line(ngx_event_t *rev)
     for ( ;; ) {
 
         if (rc == NGX_AGAIN) {
-            n = ngx_http_read_request_header(r);//读取http请求头的数据
+            n = ngx_http_read_request_header(r);//读取http请求header（请求行属于header）数据
 
             if (n == NGX_AGAIN || n == NGX_ERROR) {//返回ngx_again表示
                 return;
@@ -996,7 +996,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
 
             if (r->header_in->pos == r->header_in->end) {
 
-                rv = ngx_http_alloc_large_header_buffer(r, 0);
+                rv = ngx_http_alloc_large_header_buffer(r, 0);//分配更大内存
 
                 if (rv == NGX_ERROR) {
                     ngx_http_close_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1058,7 +1058,7 @@ ngx_http_process_request_headers(ngx_event_t *rev)
 
             /* a header line has been parsed successfully */
 
-            h = ngx_list_push(&r->headers_in.headers);
+            h = ngx_list_push(&r->headers_in.headers);//把解析出的http header压入到http请求的header中
             if (h == NULL) {
                 ngx_http_close_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
                 return;
@@ -1087,10 +1087,9 @@ ngx_http_process_request_headers(ngx_event_t *rev)
                 ngx_strlow(h->lowcase_key, h->key.data, h->key.len);
             }
 
-            
+            //从全局配置表里搜索相应的http header处理函数，并调用
             hh = ngx_hash_find(&cmcf->headers_in_hash, h->hash,
-                               h->lowcase_key, h->key.len);//从全局head哈希表中搜索
-
+                               h->lowcase_key, h->key.len);
             if (hh && hh->handler(r, h, hh->offset) != NGX_OK) {//调用header对应的处理函数
                 return;
             }
@@ -1686,7 +1685,7 @@ ngx_http_process_request(ngx_http_request_t *r)
     ngx_http_run_posted_requests(c);
 }
 
-
+//验证header中host项的合法性
 static ssize_t
 ngx_http_validate_host(ngx_http_request_t *r, u_char **host, size_t len,
     ngx_uint_t alloc)
@@ -1704,7 +1703,7 @@ ngx_http_validate_host(ngx_http_request_t *r, u_char **host, size_t len,
 
         if (ch == '.') {
             if (dot) {
-                return 0;
+                return 0; //连续两个.符，返回0
             }
 
             dot = 1;
@@ -1727,7 +1726,7 @@ ngx_http_validate_host(ngx_http_request_t *r, u_char **host, size_t len,
         }
     }
 
-    if (dot) {
+    if (dot) {//以dot结尾
         last--;
     }
 
@@ -1812,7 +1811,7 @@ found:
 }
 
 
-/* 进入到http procress request阶段后的连接read事件的回调函数 */
+/* 进入到http procress request阶段后read事件的回调函数 */
 static void
 ngx_http_request_handler(ngx_event_t *ev)
 {

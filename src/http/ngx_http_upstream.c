@@ -379,7 +379,7 @@ ngx_http_upstream_create(ngx_http_request_t *r)
 
     u = r->upstream;
 
-    if (u && u->cleanup) {
+    if (u && u->cleanup) {//已创建
         r->main->count++;
         ngx_http_upstream_cleanup(r);
     }
@@ -391,7 +391,7 @@ ngx_http_upstream_create(ngx_http_request_t *r)
 
     r->upstream = u;//请求对应的上有服务器
 
-    u->peer.log = r->connection->log;
+    u->peer.log = r->connection->log;//设置远端连接的日志参数
     u->peer.log_error = NGX_ERROR_ERR;
 #if (NGX_THREADS)
     u->peer.lock = &r->connection->lock;

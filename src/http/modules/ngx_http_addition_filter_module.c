@@ -192,12 +192,12 @@ ngx_http_addition_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     return ngx_http_send_special(r, NGX_HTTP_LAST);
 }
 
-
+/* 初始化addition过滤模块 */
 static ngx_int_t
 ngx_http_addition_filter_init(ngx_conf_t *cf)
 {
     ngx_http_next_header_filter = ngx_http_top_header_filter;
-    ngx_http_top_header_filter = ngx_http_addition_header_filter;
+    ngx_http_top_header_filter = ngx_http_addition_header_filter;//链头插入新过滤函数
 
     ngx_http_next_body_filter = ngx_http_top_body_filter;
     ngx_http_top_body_filter = ngx_http_addition_body_filter;

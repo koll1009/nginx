@@ -802,7 +802,7 @@ ngx_module_t  ngx_http_core_module = {
 ngx_str_t  ngx_http_core_get_method = { 3, (u_char *) "GET " };
 
 
-
+/* 执行模块处理函数 */
 void
 ngx_http_handler(ngx_http_request_t *r)
 {
@@ -858,7 +858,7 @@ ngx_http_core_run_phases(ngx_http_request_t *r)
 
     ph = cmcf->phase_engine.handlers;
 
-    while (ph[r->phase_handler].checker) {
+    while (ph[r->phase_handler].checker) {//依次执行各module的处理函数
 
         rc = ph[r->phase_handler].checker(r, &ph[r->phase_handler]);
 
@@ -882,7 +882,7 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "generic phase: %ui", r->phase_handler);
 
-    rc = ph->handler(r);/* 调用这一阶段http模块的handler函数 */
+    rc = ph->handler(r);/* 调用http模块的handler函数 */
 
 	/* 返回NGX_OK则进入下一阶段处理，即使本阶段还有其他处理函数 */
     if (rc == NGX_OK) {
@@ -890,7 +890,7 @@ ngx_http_core_generic_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
         return NGX_AGAIN;
     }
 
-	/* 返回NGX_DECLINED,转到下一个处理函数 */
+	/* 返回NGX_DECLINED,转到本阶段的下一个处理函数 */
     if (rc == NGX_DECLINED) {
         r->phase_handler++;
         return NGX_AGAIN;
@@ -949,7 +949,7 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
     r->content_handler = NULL;
     r->uri_changed = 0;
 
-    rc = ngx_http_core_find_location(r);
+    rc = ngx_http_core_find_location(r);//请求的uri和location配置进行匹配
 
     if (rc == NGX_ERROR) {
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -1534,7 +1534,7 @@ ngx_http_core_find_location(ngx_http_request_t *r)
 
         /* look up nested locations */
 
-        rc = ngx_http_core_find_location(r);
+        rc = ngx_http_core_find_location(r);//嵌套搜索
     }
 
     if (rc == NGX_OK || rc == NGX_DONE) {
@@ -1861,7 +1861,7 @@ ngx_http_send_response(ngx_http_request_t *r, ngx_uint_t status,
     return ngx_http_output_filter(r, &out);
 }
 
-
+/* 发送响应header */
 ngx_int_t
 ngx_http_send_header(ngx_http_request_t *r)
 {
@@ -2769,7 +2769,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     ngx_http_conf_ctx_t       *ctx, *pctx;
     ngx_http_core_loc_conf_t  *clcf, *pclcf;
 
-    ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));
+    ctx = ngx_pcalloc(cf->pool, sizeof(ngx_http_conf_ctx_t));//分配http配置项上下文数组
     if (ctx == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -2815,7 +2815,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         if (len == 1 && mod[0] == '=') {
 
             clcf->name = *name;
-            clcf->exact_match = 1;
+            clcf->exact_match = 1;//
 
         } 
 		/* location ^~ /path，前半部分匹配即可，即以/path的uri请求使用该location配置 */
@@ -2890,7 +2890,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         }
     }
 
-    pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];
+    pclcf = pctx->loc_conf[ngx_http_core_module.ctx_index];//父级core location配置项
 
 	/* 如果有location嵌套，则要检查合法性 */
     if (pclcf->name.len) {
@@ -2956,7 +2956,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     return rv;
 }
 
-/* 正则表达式 */
+/* 带有正则表达式的location解析 */
 static ngx_int_t
 ngx_http_core_regex_location(ngx_conf_t *cf, ngx_http_core_loc_conf_t *clcf,
     ngx_str_t *regex, ngx_uint_t caseless)
@@ -2977,7 +2977,7 @@ ngx_http_core_regex_location(ngx_conf_t *cf, ngx_http_core_loc_conf_t *clcf,
     rc.options = caseless;
 #endif
 
-    clcf->regex = ngx_http_regex_compile(cf, &rc);
+    clcf->regex = ngx_http_regex_compile(cf, &rc);//编译正则表达式
     if (clcf->regex == NULL) {
         return NGX_ERROR;
     }

@@ -126,7 +126,7 @@ typedef struct ngx_http_phase_handler_s  ngx_http_phase_handler_t;
 typedef ngx_int_t (*ngx_http_phase_handler_pt)(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph);
 
-/* 阶段处理描述符 */
+/* http各模块处理函数描述符 */
 struct ngx_http_phase_handler_s {
     ngx_http_phase_handler_pt  checker;//checker函数
     ngx_http_handler_pt        handler;//handler函数
@@ -204,7 +204,7 @@ typedef struct {
     unsigned                    captures:1;
 #endif
 
-    ngx_http_core_loc_conf_t  **named_locations;//指向所有named location的core配置项
+    ngx_http_core_loc_conf_t  **named_locations;//指向所有有重定向标记的location的core配置项
 } ngx_http_core_srv_conf_t;
 
 
@@ -309,7 +309,7 @@ struct ngx_http_core_loc_conf_s {
 
     unsigned      noname:1;   /* "if () {}" block or limit_except */
     unsigned      lmt_excpt:1;
-    unsigned      named:1;//重定向标志
+    unsigned      named:1;//重定向标志，表示又@标识符
 
     unsigned      exact_match:1;//精确匹配标志
     unsigned      noregex:1;//前半部分匹配标志
@@ -435,7 +435,7 @@ struct ngx_http_core_loc_conf_s {
 /* location队列结构体 */
 typedef struct {
     ngx_queue_t                      queue;//location链表节点
-    ngx_http_core_loc_conf_t        *exact;//精确匹配，则使用该字段指向配置信息
+    ngx_http_core_loc_conf_t        *exact;//精确匹配、正则匹配、，则使用该字段指向配置信息（
     ngx_http_core_loc_conf_t        *inclusive;//统配类型，包^~ path代表的前半部分匹配和location /path代表的文件夹路径形式
     ngx_str_t                       *name;//指向location的名字，即path字符串
     u_char                          *file_name;

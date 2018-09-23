@@ -155,8 +155,8 @@ typedef enum {
 /* http header描述符 */
 typedef struct {
     ngx_str_t                         name;//header名
-    ngx_uint_t                        offset;
-    ngx_http_header_handler_pt        handler;
+    ngx_uint_t                        offset;//在结构体中的偏移量
+    ngx_http_header_handler_pt        handler;//处理函数
 } ngx_http_header_t;
 
 
@@ -284,7 +284,7 @@ typedef struct {
 
 
 typedef struct {
-    ngx_http_request_t               *request;
+    ngx_http_request_t               *request;//对应的请求描述符
 
     ngx_buf_t                       **busy;//保存接收请求的缓存
     ngx_int_t                         nbusy;//用的缓存数目
@@ -390,9 +390,9 @@ struct ngx_http_request_s {
     ngx_uint_t                        method;
     ngx_uint_t                        http_version;
 
-    ngx_str_t                         request_line;//请求行
-    ngx_str_t                         uri;
-    ngx_str_t                         args;
+    ngx_str_t                         request_line;//请求行字符串
+    ngx_str_t                         uri;//请求的uri地址
+    ngx_str_t                         args;//请求里的参数
     ngx_str_t                         exten;
     ngx_str_t                         unparsed_uri;
 

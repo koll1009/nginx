@@ -286,7 +286,7 @@ ngx_handle_read_event(ngx_event_t *rev, ngx_uint_t flags)
         /* kqueue, epoll */
 
         if (!rev->active && !rev->ready) {
-            if (ngx_add_event(rev, NGX_READ_EVENT, NGX_CLEAR_EVENT)
+            if (ngx_add_event(rev, NGX_READ_EVENT, NGX_CLEAR_EVENT)//±ßÔµ´¥·¢
                 == NGX_ERROR)
             {
                 return NGX_ERROR;

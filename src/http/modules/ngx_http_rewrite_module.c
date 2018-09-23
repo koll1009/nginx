@@ -160,24 +160,24 @@ ngx_http_rewrite_handler(ngx_http_request_t *r)
         return NGX_DECLINED;
     }
 
-    e = ngx_pcalloc(r->pool, sizeof(ngx_http_script_engine_t));
+    e = ngx_pcalloc(r->pool, sizeof(ngx_http_script_engine_t));//创建一个引擎执行结构体
     if (e == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     e->sp = ngx_pcalloc(r->pool,
-                        rlcf->stack_size * sizeof(ngx_http_variable_value_t));
+                        rlcf->stack_size * sizeof(ngx_http_variable_value_t));//分配栈数组
     if (e->sp == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    e->ip = rlcf->codes->elts;
+    e->ip = rlcf->codes->elts;//指令数组
     e->request = r;
     e->quote = 1;
     e->log = rlcf->log;
     e->status = NGX_DECLINED;
 
-    while (*(uintptr_t *) e->ip) {//依次执行
+    while (*(uintptr_t *) e->ip) {//依次执行脚本指令
         code = *(ngx_http_script_code_pt *) e->ip;
         code(e);
     }

@@ -414,7 +414,7 @@ ngx_http_index_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     return NGX_CONF_OK;
 }
 
-
+/*  */
 static ngx_int_t
 ngx_http_index_init(ngx_conf_t *cf)
 {
@@ -446,6 +446,7 @@ ngx_http_index_set_index(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_http_index_t           *index;
     ngx_http_script_compile_t   sc;
 
+	//index可以有多个值，所以分配一个数组
     if (ilcf->indices == NULL) {
         ilcf->indices = ngx_array_create(cf->pool, 2, sizeof(ngx_http_index_t));
         if (ilcf->indices == NULL) {
@@ -457,7 +458,7 @@ ngx_http_index_set_index(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     for (i = 1; i < cf->args->nelts; i++) {
 
-        if (value[i].data[0] == '/' && i != cf->args->nelts - 1) {
+        if (value[i].data[0] == '/' && i != cf->args->nelts - 1) {//只有最后一个index指令可以为绝对路径
             ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                                "only the last index in \"index\" directive "
                                "should be absolute");

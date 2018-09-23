@@ -44,6 +44,7 @@ ngx_module_t  ngx_http_write_filter_module = {
 };
 
 
+/* 过滤模块的发送函数 */
 ngx_int_t
 ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
 {
@@ -68,7 +69,7 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
     /* find the size, the flush point and the last link of the saved chain */
 
     for (cl = r->out; cl; cl = cl->next) {
-        ll = &cl->next;
+        ll = &cl->next;//ll在循环结束时会指向链表的尾结点的next指针
 
         ngx_log_debug7(NGX_LOG_DEBUG_EVENT, c->log, 0,
                        "write old buf t:%d f:%d %p, pos %p, size: %z "
@@ -99,7 +100,7 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
         }
 #endif
 
-        size += ngx_buf_size(cl->buf);
+        size += ngx_buf_size(cl->buf);//加上当前buffer的长度
 
         if (cl->buf->flush || cl->buf->recycled) {
             flush = 1;
@@ -112,8 +113,9 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     /* add the new chain to the existent one */
 
+	/* 把in链表串到request.out链表尾部 */
     for (ln = in; ln; ln = ln->next) {
-        cl = ngx_alloc_chain_link(r->pool);
+        cl = ngx_alloc_chain_link(r->pool);//新分配要给ngx_chain_t
         if (cl == NULL) {
             return NGX_ERROR;
         }
@@ -239,7 +241,7 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http write filter limit %O", limit);
 
-    chain = c->send_chain(c, r->out, limit);
+    chain = c->send_chain(c, r->out, limit);//发送数据，返回已发送的
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http write filter %p", chain);

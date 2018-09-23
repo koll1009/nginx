@@ -254,7 +254,7 @@ typedef struct {
 typedef void (*ngx_http_upstream_handler_pt)(ngx_http_request_t *r,
     ngx_http_upstream_t *u);
 
-
+//上游服务器结构体
 struct ngx_http_upstream_s {
     ngx_http_upstream_handler_pt     read_event_handler;//读事件的回调函数
     ngx_http_upstream_handler_pt     write_event_handler;//写事件的回调函数

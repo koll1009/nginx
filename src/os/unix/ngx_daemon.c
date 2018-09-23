@@ -8,7 +8,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 
-
+//设置为守护进程
 ngx_int_t ngx_daemon(ngx_log_t *log)
 {
     int  fd;
@@ -26,7 +26,7 @@ ngx_int_t ngx_daemon(ngx_log_t *log)
     }
 
     ngx_pid = ngx_getpid();
-
+	
     if (setsid() == -1) {
         ngx_log_error(NGX_LOG_EMERG, log, ngx_errno, "setsid() failed");
         return NGX_ERROR;

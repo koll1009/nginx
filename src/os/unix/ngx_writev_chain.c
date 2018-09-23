@@ -16,7 +16,7 @@
 #define NGX_IOVS  IOV_MAX
 #endif
 
-/*  */
+/* 几段缓存数据的发送函数 */
 ngx_chain_t *
 ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 {
@@ -32,7 +32,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 
     wev = c->write;
 
-    if (!wev->ready) {
+    if (!wev->ready) {//非可写事件，返回
         return in;
     }
 
@@ -83,7 +83,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
             }
 #endif
 
-            size = cl->buf->last - cl->buf->pos;
+            size = cl->buf->last - cl->buf->pos;//计算该段缓存内待发送数据长度
 
             if (send + size > limit) {//write的数据超出了限制
                 size = (ssize_t) (limit - send);
@@ -93,7 +93,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
                 iov->iov_len += size;
 
             } else {
-                iov = ngx_array_push(&vec);
+                iov = ngx_array_push(&vec);//添加到数组中 
                 if (iov == NULL) {
                     return NGX_CHAIN_ERROR;
                 }
@@ -106,7 +106,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
             send += size;
         }
 
-        n = writev(c->fd, vec.elts, vec.nelts);//执行writev操作
+        n = writev(c->fd, vec.elts, vec.nelts);//执行writev操作，把几段缓存数据一次内核调用发送出
 
         if (n == -1) {
             err = ngx_errno;
@@ -167,7 +167,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
             continue;
         }
 
-        if (!complete) {//此时写缓存不足
+        if (!complete) {//此时写缓存不足，等待下次执行
             wev->ready = 0;
             return cl;
         }

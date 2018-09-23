@@ -427,7 +427,7 @@ ngx_http_init_headers_in_hash(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
         return NGX_ERROR;
     }
 
-	
+	//把预定义的http请求header
     for (header = ngx_http_headers_in; header->name.len; header++) {
         hk = ngx_array_push(&headers_in);
         if (hk == NULL) {
@@ -455,7 +455,7 @@ ngx_http_init_headers_in_hash(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 }
 
 
-/* 每个http phase处理函数初始化 */
+/* 初始化各http phase处理函数 */
 static ngx_int_t
 ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
 {
@@ -466,14 +466,15 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
     ngx_http_phase_handler_t   *ph;
     ngx_http_phase_handler_pt   checker;
 
-    cmcf->phase_engine.server_rewrite_index = (ngx_uint_t) -1;
+    cmcf->phase_engine.server_rewrite_index = (ngx_uint_t) -1;//重写模块的索引
     cmcf->phase_engine.location_rewrite_index = (ngx_uint_t) -1;
-    find_config_index = 0;
+    find_config_index = 0;//uri匹配模块的索引
     use_rewrite = cmcf->phases[NGX_HTTP_REWRITE_PHASE].handlers.nelts ? 1 : 0;
     use_access = cmcf->phases[NGX_HTTP_ACCESS_PHASE].handlers.nelts ? 1 : 0;
 
     n = use_rewrite + use_access + cmcf->try_files + 1 /* find config phase */;
 
+	//计算所有参与http处理的函数的数量
     for (i = 0; i < NGX_HTTP_LOG_PHASE; i++) {
         n += cmcf->phases[i].handlers.nelts;
     }
@@ -696,7 +697,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_queue_t                 *regex;//第一个正则表达式类的location的位置
 #endif
 
-    locations = pclcf->locations;
+    locations = pclcf->locations;//所有子location配置项
 
     if (locations == NULL) {
         return NGX_OK;
@@ -759,7 +760,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     if (named) {//分配一个数组保存所有的named location core 配置项，末端安插一个null节点
         clcfp = ngx_palloc(cf->pool,
                            (n + 1) * sizeof(ngx_http_core_loc_conf_t **));
-        if (clcfp == NULL) {
+        if (clcfp == NULL) {//因为含有重定向符的location不允许嵌套在其他location下，所以不可能为null
             return NGX_ERROR;
         }
 
@@ -771,7 +772,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
         {
             lq = (ngx_http_location_queue_t *) q;
 
-            *(clcfp++) = lq->exact;//把所有named location保存到server的named_locations数组中
+            *(clcfp++) = lq->exact;//把所有named location的配置上下文保存到server的named_locations数组中
         }
 
         *clcfp = NULL;
@@ -867,7 +868,7 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
 {
     ngx_http_location_queue_t  *lq;
 
-    if (*locations == NULL) {
+    if (*locations == NULL) {//如果链表为null，先分配，用以连接所有子级location配置项
         *locations = ngx_palloc(cf->temp_pool,
                                 sizeof(ngx_http_location_queue_t));
         if (*locations == NULL) {
@@ -886,12 +887,12 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
 #if (NGX_PCRE)
         || clcf->regex
 #endif
-        || clcf->named || clcf->noname) //精确匹配、正则、重定向、
+        || clcf->named || clcf->noname) //精确匹配、正则、重定向
     {
         lq->exact = clcf;
         lq->inclusive = NULL;
 
-    } else {
+    } else {//前半部匹配、uri前没有前置标识符类型使用inclusive
         lq->exact = NULL;
         lq->inclusive = clcf;
     }
@@ -922,7 +923,7 @@ ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
     first = lq1->exact ? lq1->exact : lq1->inclusive;
     second = lq2->exact ? lq2->exact : lq2->inclusive;
 
-    if (first->noname && !second->noname) {
+    if (first->noname && !second->noname) {//no name location放在最后
         /* shift no named locations to the end */
         return 1;
     }
@@ -937,7 +938,7 @@ ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
         return 0;
     }
 
-    if (first->named && !second->named) {
+    if (first->named && !second->named) {//其次，重定向location移到最后
         /* shift named locations to the end */
         return 1;
     }
@@ -953,7 +954,7 @@ ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
 
 #if (NGX_PCRE)
 
-    if (first->regex && !second->regex) {
+    if (first->regex && !second->regex) {//其次，使用正则表达式匹配的location移到最后
         /* shift the regex matches to the end */
         return 1;
     }
@@ -970,9 +971,10 @@ ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
 
 #endif
 
+	/* */
     rc = ngx_strcmp(first->name.data, second->name.data);
 
-    if (rc == 0 && !first->exact_match && second->exact_match) {//对于
+    if (rc == 0 && !first->exact_match && second->exact_match) {
         /* an exact match must be before the same inclusive one */
         return 1;
     }

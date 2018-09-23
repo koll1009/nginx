@@ -149,7 +149,7 @@ ngx_http_header_out_t  ngx_http_headers_out[] = {
     { ngx_null_string, 0 }
 };
 
-
+//发送http响应header
 static ngx_int_t
 ngx_http_header_filter(ngx_http_request_t *r)
 {
@@ -170,13 +170,13 @@ ngx_http_header_filter(ngx_http_request_t *r)
 #endif
     u_char                     addr[NGX_SOCKADDR_STRLEN];
 
-    if (r->header_sent) {
+    if (r->header_sent) {//已经发送过header，直接返回
         return NGX_OK;
     }
 
     r->header_sent = 1;
 
-    if (r != r->main) {
+    if (r != r->main) {//只有原始request需要发送header
         return NGX_OK;
     }
 
@@ -188,7 +188,7 @@ ngx_http_header_filter(ngx_http_request_t *r)
         r->header_only = 1;
     }
 
-    if (r->headers_out.last_modified_time != -1) {
+    if (r->headers_out.last_modified_time != -1) {//响应头有last_modified_time信息，但状态码不对，直接设为无效
         if (r->headers_out.status != NGX_HTTP_OK
             && r->headers_out.status != NGX_HTTP_PARTIAL_CONTENT
             && r->headers_out.status != NGX_HTTP_NOT_MODIFIED)
@@ -198,24 +198,25 @@ ngx_http_header_filter(ngx_http_request_t *r)
         }
     }
 
+	//响应数据的初始长度 
     len = sizeof("HTTP/1.x ") - 1 + sizeof(CRLF) - 1
           /* the end of the header */
           + sizeof(CRLF) - 1;
 
     /* status line */
 
-    if (r->headers_out.status_line.len) {
+    if (r->headers_out.status_line.len) {//有状态行字符串的直接递增长度
         len += r->headers_out.status_line.len;
         status_line = &r->headers_out.status_line;
 #if (NGX_SUPPRESS_WARN)
         status = 0;
 #endif
 
-    } else {
+    } else {//没有状态行字符串的，根据状态码进行转换
 
         status = r->headers_out.status;
 
-        if (status >= NGX_HTTP_OK
+        if (status >= NGX_HTTP_OK //200开头的状态码的转换
             && status < NGX_HTTP_LAST_2XX)
         {
             /* 2XX */
@@ -234,7 +235,7 @@ ngx_http_header_filter(ngx_http_request_t *r)
             len += ngx_http_status_lines[status].len;
 
         } else if (status >= NGX_HTTP_MOVED_PERMANENTLY
-                   && status < NGX_HTTP_LAST_3XX)
+                   && status < NGX_HTTP_LAST_3XX)//300开头的状态码的转换
         {
             /* 3XX */
 
@@ -247,7 +248,7 @@ ngx_http_header_filter(ngx_http_request_t *r)
             len += ngx_http_status_lines[status].len;
 
         } else if (status >= NGX_HTTP_BAD_REQUEST
-                   && status < NGX_HTTP_LAST_4XX)
+                   && status < NGX_HTTP_LAST_4XX)//400开头的状态码的转换
         {
             /* 4XX */
             status = status - NGX_HTTP_BAD_REQUEST
@@ -257,7 +258,7 @@ ngx_http_header_filter(ngx_http_request_t *r)
             len += ngx_http_status_lines[status].len;
 
         } else if (status >= NGX_HTTP_INTERNAL_SERVER_ERROR
-                   && status < NGX_HTTP_LAST_5XX)
+                   && status < NGX_HTTP_LAST_5XX)//500开头的状态码的转换
         {
             /* 5XX */
             status = status - NGX_HTTP_INTERNAL_SERVER_ERROR
@@ -274,15 +275,18 @@ ngx_http_header_filter(ngx_http_request_t *r)
 
     clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
+	//server信息
     if (r->headers_out.server == NULL) {
         len += clcf->server_tokens ? sizeof(ngx_http_server_full_string) - 1:
                                      sizeof(ngx_http_server_string) - 1;
     }
 
+	//日期
     if (r->headers_out.date == NULL) {
         len += sizeof("Date: Mon, 28 Sep 1970 06:00:00 GMT" CRLF) - 1;
     }
 
+	//content-type
     if (r->headers_out.content_type.len) {
         len += sizeof("Content-Type: ") - 1
                + r->headers_out.content_type.len + 2;
@@ -294,12 +298,14 @@ ngx_http_header_filter(ngx_http_request_t *r)
         }
     }
 
+	//content-length
     if (r->headers_out.content_length == NULL
         && r->headers_out.content_length_n >= 0)
     {
         len += sizeof("Content-Length: ") - 1 + NGX_OFF_T_LEN + 2;
     }
 
+	//last-modified
     if (r->headers_out.last_modified == NULL
         && r->headers_out.last_modified_time != -1)
     {
@@ -325,7 +331,7 @@ ngx_http_header_filter(ngx_http_request_t *r)
             host.len = NGX_SOCKADDR_STRLEN;
             host.data = addr;
 
-            if (ngx_connection_local_sockaddr(c, &host, 0) != NGX_OK) {
+            if (ngx_connection_local_sockaddr(c, &host, 0) != NGX_OK) {//解析成
                 return NGX_ERROR;
             }
         }
@@ -412,6 +418,7 @@ ngx_http_header_filter(ngx_http_request_t *r)
     part = &r->headers_out.headers.part;
     header = part->elts;
 
+	//依次添加链表中的header
     for (i = 0; /* void */; i++) {
 
         if (i >= part->nelts) {
@@ -432,6 +439,7 @@ ngx_http_header_filter(ngx_http_request_t *r)
                + sizeof(CRLF) - 1;
     }
 
+	//分配内存
     b = ngx_create_temp_buf(r->pool, len);
     if (b == NULL) {
         return NGX_ERROR;
@@ -610,14 +618,14 @@ ngx_http_header_filter(ngx_http_request_t *r)
     out.buf = b;
     out.next = NULL;
 
-    return ngx_http_write_filter(r, &out);
+    return ngx_http_write_filter(r, &out);//把构造好的http response header发送出去
 }
 
-
+//模块初始化
 static ngx_int_t
 ngx_http_header_filter_init(ngx_conf_t *cf)
 {
-    ngx_http_top_header_filter = ngx_http_header_filter;
+    ngx_http_top_header_filter = ngx_http_header_filter;//定义最后一个header filter函数
 
     return NGX_OK;
 }

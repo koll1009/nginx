@@ -64,7 +64,7 @@ ngx_read_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
     return n;
 }
 
-
+/* 写文件函数 */
 ssize_t
 ngx_write_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
 {
@@ -78,7 +78,7 @@ ngx_write_file(ngx_file_t *file, u_char *buf, size_t size, off_t offset)
 #if (NGX_HAVE_PWRITE)
 
     for ( ;; ) {
-        n = pwrite(file->fd, buf + written, size, offset);
+        n = pwrite(file->fd, buf + written, size, offset);//pwrite是seek and write组合操作的原子函数
 
         if (n == -1) {
             ngx_log_error(NGX_LOG_CRIT, file->log, ngx_errno,
@@ -150,6 +150,7 @@ ngx_open_tempfile(u_char *name, ngx_uint_t persistent, ngx_uint_t access)
 
 #define NGX_IOVS  8
 
+/* 写文件 */
 ssize_t
 ngx_write_chain_to_file(ngx_file_t *file, ngx_chain_t *cl, off_t offset,
     ngx_pool_t *pool)
@@ -168,6 +169,7 @@ ngx_write_chain_to_file(ngx_file_t *file, ngx_chain_t *cl, off_t offset,
                               offset);
     }
 
+	//如果有多个待写buffer，使用writev减少系统调用
     total = 0;
 
     vec.elts = iovs;
