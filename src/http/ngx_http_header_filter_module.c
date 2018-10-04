@@ -439,7 +439,7 @@ ngx_http_header_filter(ngx_http_request_t *r)
                + sizeof(CRLF) - 1;
     }
 
-	//分配内存
+	//分配内存,依次构造response header字符串
     b = ngx_create_temp_buf(r->pool, len);
     if (b == NULL) {
         return NGX_ERROR;
@@ -625,7 +625,7 @@ ngx_http_header_filter(ngx_http_request_t *r)
 static ngx_int_t
 ngx_http_header_filter_init(ngx_conf_t *cf)
 {
-    ngx_http_top_header_filter = ngx_http_header_filter;//定义最后一个header filter函数
+    ngx_http_top_header_filter = ngx_http_header_filter;//定义最后一个header filter函数，用以向client发送
 
     return NGX_OK;
 }

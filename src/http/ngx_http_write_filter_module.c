@@ -212,14 +212,15 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
         return NGX_ERROR;
     }
 
+	//计算速率限制
     if (r->limit_rate) {
-        limit = r->limit_rate * (ngx_time() - r->start_sec + 1)
+        limit = r->limit_rate * (ngx_time() - r->start_sec + 1)//计算速率*时间 - 已发送的数据
                 - (c->sent - clcf->limit_rate_after);
 
-        if (limit <= 0) {
+        if (limit <= 0) {//已超量
             c->write->delayed = 1;
             ngx_add_timer(c->write,
-                          (ngx_msec_t) (- limit * 1000 / r->limit_rate + 1));
+                          (ngx_msec_t) (- limit * 1000 / r->limit_rate + 1));//添加定时器，定时器时间跟限速有关
 
             c->buffered |= NGX_HTTP_WRITE_BUFFERED;
 
@@ -241,7 +242,7 @@ ngx_http_write_filter(ngx_http_request_t *r, ngx_chain_t *in)
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http write filter limit %O", limit);
 
-    chain = c->send_chain(c, r->out, limit);//发送数据，返回已发送的
+    chain = c->send_chain(c, r->out, limit);//发送数据
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                    "http write filter %p", chain);

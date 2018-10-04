@@ -144,12 +144,16 @@ ngx_http_upstream_header_t  ngx_http_upstream_headers_in[] = {
                  offsetof(ngx_http_upstream_headers_in_t, status),
                  ngx_http_upstream_copy_header_line, 0, 0 },
 
+	/* text/plain:纯文本
+	 * application/x-www-form-urlencoded:键值对
+	 * multipart/form-data:数据被编码为一条消息，页上的每个控件对应消息中的一个部分。
+	 */
     { ngx_string("Content-Type"),
                  ngx_http_upstream_process_header_line,
                  offsetof(ngx_http_upstream_headers_in_t, content_type),
                  ngx_http_upstream_copy_content_type, 0, 1 },
 
-    { ngx_string("Content-Length"),
+    { ngx_string("Content-Length"),//数据长度
                  ngx_http_upstream_process_header_line,
                  offsetof(ngx_http_upstream_headers_in_t, content_length),
                  ngx_http_upstream_copy_content_length, 0, 0 },
@@ -3044,6 +3048,7 @@ ngx_http_upstream_finalize_request(ngx_http_request_t *r,
 }
 
 
+/* upstream的header赋值函数 */
 static ngx_int_t
 ngx_http_upstream_process_header_line(ngx_http_request_t *r, ngx_table_elt_t *h,
     ngx_uint_t offset)
@@ -3345,7 +3350,7 @@ ngx_http_upstream_process_charset(ngx_http_request_t *r, ngx_table_elt_t *h,
     return NGX_OK;
 }
 
-
+/* upstream的header复制函数 */
 static ngx_int_t
 ngx_http_upstream_copy_header_line(ngx_http_request_t *r, ngx_table_elt_t *h,
     ngx_uint_t offset)
@@ -3968,7 +3973,7 @@ ngx_http_upstream_cache_status(ngx_http_request_t *r,
 
 #endif
 
-
+/* upstream配置项解析 */
 static char *
 ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -3988,6 +3993,7 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     u.host = value[1];
     u.no_resolve = 1;
 
+	/* 创建一个配置上下文 */
     uscf = ngx_http_upstream_add(cf, &u, NGX_HTTP_UPSTREAM_CREATE
                                          |NGX_HTTP_UPSTREAM_WEIGHT
                                          |NGX_HTTP_UPSTREAM_MAX_FAILS
@@ -4005,7 +4011,7 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     http_ctx = cf->ctx;
-    ctx->main_conf = http_ctx->main_conf;
+    ctx->main_conf = http_ctx->main_conf;//指向http级别的配置项
 
     /* the upstream{}'s srv_conf */
 
@@ -4076,7 +4082,7 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     return rv;
 }
 
-
+/* upstream下server项的解析函数 */
 static char *
 ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -4089,7 +4095,7 @@ ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_uint_t                   i;
     ngx_http_upstream_server_t  *us;
 
-    if (uscf->servers == NULL) {
+    if (uscf->servers == NULL) {//初始化数组
         uscf->servers = ngx_array_create(cf->pool, 4,
                                          sizeof(ngx_http_upstream_server_t));
         if (uscf->servers == NULL) {
@@ -4108,10 +4114,10 @@ ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     ngx_memzero(&u, sizeof(ngx_url_t));
 
-    u.url = value[1];
+    u.url = value[1];//参数1为url
     u.default_port = 80;
 
-    if (ngx_parse_url(cf->pool, &u) != NGX_OK) {
+    if (ngx_parse_url(cf->pool, &u) != NGX_OK) {//解析url
         if (u.err) {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "%s in upstream \"%V\"", u.err, &u.url);
@@ -4132,7 +4138,7 @@ ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
                 goto invalid;
             }
 
-            weight = ngx_atoi(&value[i].data[7], value[i].len - 7);
+            weight = ngx_atoi(&value[i].data[7], value[i].len - 7);//设置权重值
 
             if (weight == NGX_ERROR || weight == 0) {
                 goto invalid;
@@ -4198,7 +4204,7 @@ ngx_http_upstream_server(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
         goto invalid;
     }
-
+	//赋值
     us->addrs = u.addrs;
     us->naddrs = u.naddrs;
     us->weight = weight;
@@ -4259,7 +4265,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
             return NULL;
         }
 
-        if ((uscfp[i]->flags & NGX_HTTP_UPSTREAM_CREATE) && u->port) {//需要新创建的上游服务器需要有端口号
+        if ((uscfp[i]->flags & NGX_HTTP_UPSTREAM_CREATE) && u->port) {//端口号可能不一致
             ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                                "upstream \"%V\" may not have port %d",
                                &u->host, u->port);
@@ -4296,12 +4302,12 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
         return NULL;
     }
 
-    uscf->flags = flags;
-    uscf->host = u->host;
+    uscf->flags = flags;//标志
+    uscf->host = u->host;//服务器名
     uscf->file_name = cf->conf_file->file.name.data;
     uscf->line = cf->conf_file->line;
-    uscf->port = u->port;
-    uscf->default_port = u->default_port;
+    uscf->port = u->port;//端口号
+    uscf->default_port = u->default_port;//默认端口号
 
     if (u->naddrs == 1) {//如果有具体的ip地址，则压入upstream server{}级别配置上下文中
         uscf->servers = ngx_array_create(cf->pool, 1,
@@ -4317,7 +4323,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
 
         ngx_memzero(us, sizeof(ngx_http_upstream_server_t));
 
-        us->addrs = u->addrs;
+        us->addrs = u->addrs;//具体的server ip地址
         us->naddrs = u->naddrs;
     }
 

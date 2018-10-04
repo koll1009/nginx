@@ -16,7 +16,7 @@
 #define NGX_IOVS  IOV_MAX
 #endif
 
-/* 几段缓存数据的发送函数 */
+/* 批量缓存数据的发送函数 */
 ngx_chain_t *
 ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 {
@@ -32,7 +32,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 
     wev = c->write;
 
-    if (!wev->ready) {//非可写事件，返回
+    if (!wev->ready) {//写事件未就绪
         return in;
     }
 
@@ -48,7 +48,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
 #endif
 
     /* the maximum limit size is the maximum size_t value - the page size */
-
+	//最大发送量
     if (limit == 0 || limit > (off_t) (NGX_MAX_SIZE_T_VALUE - ngx_pagesize)) {
         limit = NGX_MAX_SIZE_T_VALUE - ngx_pagesize;
     }
@@ -129,7 +129,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
                            "writev() not ready");
         }
 
-        sent = n > 0 ? n : 0;
+        sent = n > 0 ? n : 0;//成功send出去的字节数
 
         ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0, "writev: %z", sent);
 
@@ -145,7 +145,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
                 continue;
             }
 
-            if (sent == 0) {
+            if (sent == 0) {//于non complete等同处理 
                 break;
             }
 
@@ -172,7 +172,7 @@ ngx_writev_chain(ngx_connection_t *c, ngx_chain_t *in, off_t limit)
             return cl;
         }
 
-        if (send >= limit || cl == NULL) {
+        if (send >= limit || cl == NULL) {//已经超过了限制，或者已经全部缓存都send出去了，返回
             return cl;
         }
 

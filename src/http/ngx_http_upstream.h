@@ -65,8 +65,8 @@ typedef struct {
 
 typedef struct {
     ngx_hash_t                       headers_in_hash;
-    ngx_array_t                      upstreams;//保存所有
-                                             /* ngx_http_upstream_srv_conf_t */
+    ngx_array_t                      upstreams;//保存所有ngx_http_upstream_srv_conf_t
+                                             
 } ngx_http_upstream_main_conf_t;
 
 typedef struct ngx_http_upstream_srv_conf_s  ngx_http_upstream_srv_conf_t;
@@ -104,7 +104,7 @@ typedef struct {
 #define NGX_HTTP_UPSTREAM_DOWN          0x0010
 #define NGX_HTTP_UPSTREAM_BACKUP        0x0020
 
-
+/* upstream配置项信息 */
 struct ngx_http_upstream_srv_conf_s {
     ngx_http_upstream_peer_t         peer;
     void                           **srv_conf;
@@ -190,7 +190,7 @@ typedef struct {
     ngx_str_t                        module;
 } ngx_http_upstream_conf_t;
 
-
+/* upstream的header描述符 */
 typedef struct {
     ngx_str_t                        name;
     ngx_http_header_handler_pt       handler;

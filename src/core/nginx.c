@@ -37,7 +37,7 @@ static ngx_command_t  ngx_core_commands[] = {
       ngx_conf_set_flag_slot,
       0,
       offsetof(ngx_core_conf_t, daemon),
-      NULL }, //是否后台模式
+      NULL }, 
 
     /* 是否使用master-work processes形式 */
     { ngx_string("master_process"),

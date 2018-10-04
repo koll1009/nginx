@@ -2634,7 +2634,7 @@ ngx_http_proxy_redirect(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/* proxy_store的解析函数 */
 static char *
 ngx_http_proxy_store(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -2643,7 +2643,7 @@ ngx_http_proxy_store(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_str_t                  *value;
     ngx_http_script_compile_t   sc;
 
-    if (plcf->upstream.store != NGX_CONF_UNSET
+    if (plcf->upstream.store != NGX_CONF_UNSET //重复设置
         || plcf->upstream.store_lengths)
     {
         return "is duplicate";
