@@ -492,7 +492,7 @@ ngx_http_upstream_init_request(ngx_http_request_t *r)
     }
 
     if (r->request_body) {
-        u->request_bufs = r->request_body->bufs;//设置发送到上有服务器的数据
+        u->request_bufs = r->request_body->bufs;//转发到上有服务器的数据
     }
 
     if (u->create_request(r) != NGX_OK) {//创建发送到上游服务器的请求，主要是构造请求的数据，包括line header body
@@ -3993,7 +3993,7 @@ ngx_http_upstream(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     u.host = value[1];
     u.no_resolve = 1;
 
-	/* 创建一个配置上下文 */
+	/* 创建一个upstream配置上下文 */
     uscf = ngx_http_upstream_add(cf, &u, NGX_HTTP_UPSTREAM_CREATE
                                          |NGX_HTTP_UPSTREAM_WEIGHT
                                          |NGX_HTTP_UPSTREAM_MAX_FAILS
@@ -4230,7 +4230,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
     ngx_http_upstream_srv_conf_t   *uscf, **uscfp;
     ngx_http_upstream_main_conf_t  *umcf;
 
-    if (!(flags & NGX_HTTP_UPSTREAM_CREATE)) {//
+    if (!(flags & NGX_HTTP_UPSTREAM_CREATE)) {
 
         if (ngx_parse_url(cf->pool, u) != NGX_OK) {//解析url
             if (u->err) {
@@ -4257,7 +4257,7 @@ ngx_http_upstream_add(ngx_conf_t *cf, ngx_url_t *u, ngx_uint_t flags)
             continue;
         }
 
-        if ((flags & NGX_HTTP_UPSTREAM_CREATE)//服务器名一致，但是标志里标明了需要新创建，则报错
+        if ((flags & NGX_HTTP_UPSTREAM_CREATE)//上游服务器名一致，但是标志里标明了需要新创建，则报错
              && (uscfp[i]->flags & NGX_HTTP_UPSTREAM_CREATE))
         {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,

@@ -863,7 +863,7 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
 
     plcf = ngx_http_get_module_loc_conf(r, ngx_http_proxy_module);
 
-    if (u->method.len) {
+    if (u->method.len) {//http method
         /* HEAD was changed to GET to cache response */
         method = u->method;
         method.len++;
@@ -876,15 +876,15 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
         method.len++;
     }
 
-    len = method.len + sizeof(ngx_http_proxy_version) - 1 + sizeof(CRLF) - 1;
+    len = method.len + sizeof(ngx_http_proxy_version) - 1 + sizeof(CRLF) - 1;//初始长度为请求方法长度 +http版本号长度+回车换行符
 
     escape = 0;
     loc_len = 0;
     unparsed_uri = 0;
 
-    ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_module);
+    ctx = ngx_http_get_module_ctx(r, ngx_http_proxy_module);//取反向代理模块的上下文
 
-    if (plcf->proxy_lengths) {
+    if (plcf->proxy_lengths) {//反向代理中有变量
         uri_len = ctx->vars.uri.len;
 
     } else if (ctx->vars.uri.len == 0 && r->valid_unparsed_uri && r == r->main)
@@ -911,7 +911,7 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
         return NGX_ERROR;
     }
 
-    len += uri_len;
+    len += uri_len;//加请求资源的uri长度
 
     ngx_http_script_flush_no_cacheable_variables(r, plcf->flushes);
 
@@ -945,11 +945,11 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
     }
 
 
-    if (plcf->upstream.pass_request_headers) {
+    if (plcf->upstream.pass_request_headers) {//转发http header的标志
         part = &r->headers_in.headers.part;
         header = part->elts;
 
-        for (i = 0; /* void */; i++) {
+        for (i = 0; /* void */; i++) {//依次遍历所有的header
 
             if (i >= part->nelts) {
                 if (part->next == NULL) {
@@ -961,6 +961,7 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
                 i = 0;
             }
 
+			/* 自动添加的项跳过 */
             if (ngx_hash_find(&plcf->headers_set_hash, header[i].hash,
                               header[i].lowcase_key, header[i].key.len))
             {
@@ -1039,7 +1040,7 @@ ngx_http_proxy_create_request(ngx_http_request_t *r)
     le.ip = plcf->headers_set_len->elts;
 
     while (*(uintptr_t *) le.ip) {
-        lcode = *(ngx_http_script_len_code_pt *) le.ip;
+        lcode = *(ngx_http_script_len_code_pt *) le.ip;//
 
         /* skip the header line name length */
         (void) lcode(&le);

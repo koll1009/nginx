@@ -224,7 +224,7 @@ ngx_resolve_start(ngx_resolver_t *r, ngx_resolver_ctx_t *temp)
     ngx_resolver_ctx_t  *ctx;
 
     if (temp) {
-        addr = ngx_inet_addr(temp->name.data, temp->name.len);
+        addr = ngx_inet_addr(temp->name.data, temp->name.len);//µØÖ·×ª»»
 
         if (addr != INADDR_NONE) {
             temp->resolver = r;
