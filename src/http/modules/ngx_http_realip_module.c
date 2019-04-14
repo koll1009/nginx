@@ -14,7 +14,7 @@
 #define NGX_HTTP_REALIP_XFWD     1
 #define NGX_HTTP_REALIP_HEADER   2
 
-
+/* cidr表示的ip地址有效范围 */
 typedef struct {
     in_addr_t          mask;
     in_addr_t          addr;
@@ -136,7 +136,7 @@ ngx_http_realip_handler(ngx_http_request_t *r)
         return NGX_DECLINED;
     }
 
-    switch (rlcf->type) {
+    switch (rlcf->type) {//不同类型形式，
 
     case NGX_HTTP_REALIP_XREALIP:
 
@@ -281,11 +281,11 @@ ngx_http_realip_set_addr(ngx_http_request_t *r, u_char *ip, size_t len)
     cln->handler = ngx_http_realip_cleanup;
 
     ctx->connection = c;
-    ctx->sockaddr = c->sockaddr;
+    ctx->sockaddr = c->sockaddr;//保存代理地址
     ctx->socklen = c->socklen;
     ctx->addr_text = c->addr_text;
 
-    c->sockaddr = addr.sockaddr;
+    c->sockaddr = addr.sockaddr;//修改地址为原始地址
     c->socklen = addr.socklen;
     c->addr_text.len = len;
     c->addr_text.data = p;
@@ -308,7 +308,7 @@ ngx_http_realip_cleanup(void *data)
     c->addr_text = ctx->addr_text;
 }
 
-
+/* 配置项set_real_ip_from,设置real ip的有效地址范围 */
 static char *
 ngx_http_realip_from(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -378,12 +378,12 @@ ngx_http_realip(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     value = cf->args->elts;
 
-    if (ngx_strcmp(value[1].data, "X-Real-IP") == 0) {
+    if (ngx_strcmp(value[1].data, "X-Real-IP") == 0) {//只有一层信息
         rlcf->type = NGX_HTTP_REALIP_XREALIP;
         return NGX_CONF_OK;
     }
 
-    if (ngx_strcmp(value[1].data, "X-Forwarded-For") == 0) {
+    if (ngx_strcmp(value[1].data, "X-Forwarded-For") == 0) {//多层代理的ip信息都有
         rlcf->type = NGX_HTTP_REALIP_XFWD;
         return NGX_CONF_OK;
     }
@@ -449,7 +449,7 @@ ngx_http_realip_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     return NGX_CONF_OK;
 }
 
-
+/* 设置不同phase的handler */
 static ngx_int_t
 ngx_http_realip_init(ngx_conf_t *cf)
 {
