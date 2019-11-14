@@ -104,7 +104,7 @@ ngx_module_t  ngx_http_realip_module = {
     NGX_MODULE_V1_PADDING
 };
 
-
+/* 解析请求的real ip */
 static ngx_int_t
 ngx_http_realip_handler(ngx_http_request_t *r)
 {
@@ -308,7 +308,7 @@ ngx_http_realip_cleanup(void *data)
     c->addr_text = ctx->addr_text;
 }
 
-
+/* 有效ip range */
 static char *
 ngx_http_realip_from(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -368,7 +368,7 @@ ngx_http_realip_from(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/* 解析保存real ip的header name */
 static char *
 ngx_http_realip(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -388,7 +388,7 @@ ngx_http_realip(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_OK;
     }
 
-    rlcf->type = NGX_HTTP_REALIP_HEADER;
+    rlcf->type = NGX_HTTP_REALIP_HEADER; //自定义header保存real ip
     rlcf->hash = ngx_hash_strlow(value[1].data, value[1].data, value[1].len);
     rlcf->header = value[1];
 
