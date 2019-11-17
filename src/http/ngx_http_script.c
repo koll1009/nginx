@@ -317,7 +317,7 @@ ngx_http_set_predicate_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-
+/* 扫描$符的数量统计变量 */
 ngx_uint_t
 ngx_http_script_variables_count(ngx_str_t *value)
 {
@@ -332,7 +332,7 @@ ngx_http_script_variables_count(ngx_str_t *value)
     return n;
 }
 
-
+/* 编译变量 */
 ngx_int_t
 ngx_http_script_compile(ngx_http_script_compile_t *sc)
 {
@@ -340,7 +340,7 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
     ngx_str_t    name;
     ngx_uint_t   i, bracket;
 
-    if (ngx_http_script_init_arrays(sc) != NGX_OK) {
+    if (ngx_http_script_init_arrays(sc) != NGX_OK) {//初始化编译器使用的数组
         return NGX_ERROR;
     }
 
@@ -402,7 +402,7 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
                     break;
                 }
 
-                if ((ch >= 'A' && ch <= 'Z')
+                if ((ch >= 'A' && ch <= 'Z')//跳过变量名的组成字符
                     || (ch >= 'a' && ch <= 'z')
                     || (ch >= '0' && ch <= '9')
                     || ch == '_')
@@ -424,9 +424,9 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
                 goto invalid_variable;
             }
 
-            sc->variables++;
+            sc->variables++; 
 
-            if (ngx_http_script_add_var_code(sc, &name) != NGX_OK) {
+            if (ngx_http_script_add_var_code(sc, &name) != NGX_OK) {//脚本中的变量，使用var code实现解析和替换
                 return NGX_ERROR;
             }
 
@@ -679,7 +679,7 @@ ngx_http_script_add_code(ngx_array_t *codes, size_t size, void *code)
     return new;
 }
 
-
+/* 变量之间的字符串使用copy code来实现复制 */
 static ngx_int_t
 ngx_http_script_add_copy_code(ngx_http_script_compile_t *sc, ngx_str_t *value,
     ngx_uint_t last)
@@ -758,7 +758,7 @@ ngx_http_script_copy_code(ngx_http_script_engine_t *e)
                    "http script copy: \"%*s\"", e->pos - p, p);
 }
 
-
+/* 变量的赋值替换通过var code来实现 */
 static ngx_int_t
 ngx_http_script_add_var_code(ngx_http_script_compile_t *sc, ngx_str_t *name)
 {
@@ -802,7 +802,7 @@ ngx_http_script_add_var_code(ngx_http_script_compile_t *sc, ngx_str_t *name)
     return NGX_OK;
 }
 
-
+/* 解析变量值长度的指令 */
 size_t
 ngx_http_script_copy_var_len_code(ngx_http_script_engine_t *e)
 {

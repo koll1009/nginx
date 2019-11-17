@@ -60,6 +60,7 @@ ngx_regex_malloc_done(void)
 }
 
 
+/* 正则表达式编译 */
 ngx_int_t
 ngx_regex_compile(ngx_regex_compile_t *rc)
 {
@@ -137,6 +138,7 @@ failed:
 }
 
 
+/* 数组a保存的是正则式,验证a中的正则表达式能否匹配字符串s */
 ngx_int_t
 ngx_regex_exec_array(ngx_array_t *a, ngx_str_t *s, ngx_log_t *log)
 {

@@ -45,6 +45,7 @@ typedef struct {
 void ngx_regex_init(void);
 ngx_int_t ngx_regex_compile(ngx_regex_compile_t *rc);
 
+/* Ö´ÐÐÕýÔòÆ¥Åä */
 #define ngx_regex_exec(re, s, captures, size)                                \
     pcre_exec(re, NULL, (const char *) (s)->data, (s)->len, 0, 0,            \
               captures, size)
