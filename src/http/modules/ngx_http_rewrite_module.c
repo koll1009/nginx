@@ -301,7 +301,9 @@ ngx_http_rewrite_init(ngx_conf_t *cf)
     return NGX_OK;
 }
 
-
+/* rewrite 配置项，语法为rewrite regex_pattern redirect_uri break/last...
+ * 其中regex pattern用于匹配原始uri,提取关键字并用于redirect_uri
+ */
 static char *
 ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -334,7 +336,7 @@ ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     /* TODO: NGX_REGEX_CASELESS */
 
-    regex->regex = ngx_http_regex_compile(cf, &rc);
+    regex->regex = ngx_http_regex_compile(cf, &rc);//编译正则表达式，此时所有的named capture变量已经添加到了keys array中，并且已经indexed
     if (regex->regex == NULL) {
         return NGX_CONF_ERROR;
     }
@@ -363,6 +365,7 @@ ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         last = 1;
     }
 
+    /* 最后一个参数是flag */
     if (cf->args->nelts == 4) {
         if (ngx_strcmp(value[3].data, "last") == 0) {
             last = 1;
@@ -888,7 +891,7 @@ ngx_http_rewrite_variable(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     return NGX_CONF_OK;
 }
 
-
+/* set配置项 */
 static char *
 ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -911,12 +914,12 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value[1].len--;
     value[1].data++;
 
-    v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);
+    v = ngx_http_add_variable(cf, &value[1], NGX_HTTP_VAR_CHANGEABLE);//添加变量
     if (v == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    index = ngx_http_get_variable_index(cf, &value[1]);
+    index = ngx_http_get_variable_index(cf, &value[1]);//索引变量
     if (index == NGX_ERROR) {
         return NGX_CONF_ERROR;
     }
@@ -930,7 +933,7 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         v->data = index;
     }
 
-    if (ngx_http_rewrite_value(cf, lcf, &value[2]) != NGX_CONF_OK) {
+    if (ngx_http_rewrite_value(cf, lcf, &value[2]) != NGX_CONF_OK) {//编译变量值
         return NGX_CONF_ERROR;
     }
 
@@ -954,13 +957,13 @@ ngx_http_rewrite_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    vcode->code = ngx_http_script_set_var_code;
+    vcode->code = ngx_http_script_set_var_code;//变量赋值指令
     vcode->index = (uintptr_t) index;
 
     return NGX_CONF_OK;
 }
 
-
+/*  */
 static char *
 ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     ngx_str_t *value)
@@ -994,7 +997,7 @@ ngx_http_rewrite_value(ngx_conf_t *cf, ngx_http_rewrite_loc_conf_t *lcf,
     }
 
     complex = ngx_http_script_start_code(cf->pool, &lcf->codes,
-                                 sizeof(ngx_http_script_complex_value_code_t));
+                                 sizeof(ngx_http_script_complex_value_code_t));//
     if (complex == NULL) {
         return NGX_CONF_ERROR;
     }

@@ -169,7 +169,7 @@ ngx_http_realip_handler(ngx_http_request_t *r)
 
         break;
 
-    default: /* NGX_HTTP_REALIP_HEADER */
+    default: /* NGX_HTTP_REALIP_HEADER ×Ô¶¨Òårealip header */
 
         part = &r->headers_in.headers.part;
         header = part->elts;
@@ -281,7 +281,7 @@ ngx_http_realip_set_addr(ngx_http_request_t *r, u_char *ip, size_t len)
     cln->handler = ngx_http_realip_cleanup;
 
     ctx->connection = c;
-    ctx->sockaddr = c->sockaddr;
+    ctx->sockaddr = c->sockaddr;//save old addr
     ctx->socklen = c->socklen;
     ctx->addr_text = c->addr_text;
 

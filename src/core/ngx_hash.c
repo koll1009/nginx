@@ -647,7 +647,7 @@ ngx_hash_strlow(u_char *dst, u_char *src, size_t n)
     return key;
 }
 
-
+/* 初始化hash keys array,后面会使用array生成hash table */
 ngx_int_t
 ngx_hash_keys_array_init(ngx_hash_keys_arrays_t *ha, ngx_uint_t type)
 {
@@ -725,7 +725,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
 
         n = 0;
 
-        for (i = 0; i < key->len; i++) {
+        for (i = 0; i < key->len; i++) {//合法性检查，只允许一个*通配符
 
             if (key->data[i] == '*') {
                 if (++n > 1) {
@@ -738,6 +738,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
             }
         }
 
+        /* 筛选出以下三种通配符 */
         if (key->len > 1 && key->data[0] == '.') {
             skip = 1;
             goto wildcard;
@@ -779,7 +780,7 @@ ngx_hash_add_key(ngx_hash_keys_arrays_t *ha, ngx_str_t *key, void *value,
 
     name = ha->keys_hash[k].elts;
 
-    if (name) {
+    if (name) {//查重
         for (i = 0; i < ha->keys_hash[k].nelts; i++) {
             if (last != name[i].len) {
                 continue;

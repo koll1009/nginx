@@ -27,10 +27,10 @@ typedef struct {
     ngx_pool_t   *pool;
     ngx_int_t     options;
 
-    ngx_regex_t  *regex;
-    int           captures;
-    int           named_captures;
-    int           name_size;
+    ngx_regex_t  *regex;//??????????????
+    int           captures;//capture count
+    int           named_captures;//named capture count
+    int           name_size; //size of names element
     u_char       *names;
     ngx_str_t     err;
 } ngx_regex_compile_t;

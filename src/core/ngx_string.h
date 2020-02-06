@@ -24,7 +24,7 @@ typedef struct {
     ngx_str_t   value;
 } ngx_keyval_t;
 
-
+/* http变量值结构体 */
 typedef struct {
     unsigned    len:28;
 

@@ -265,6 +265,7 @@ ngx_http_variable_value_t  ngx_http_variable_true_value =
     ngx_http_variable("1");
 
 
+/* 添加http变量 */
 ngx_http_variable_t *
 ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
 {
@@ -277,7 +278,7 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
     cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
 
     key = cmcf->variables_keys->keys.elts;
-    for (i = 0; i < cmcf->variables_keys->keys.nelts; i++) {
+    for (i = 0; i < cmcf->variables_keys->keys.nelts; i++) {//重复性检查
         if (name->len != key[i].key.len
             || ngx_strncasecmp(name->data, key[i].key.data, name->len) != 0)
         {
@@ -329,7 +330,7 @@ ngx_http_add_variable(ngx_conf_t *cf, ngx_str_t *name, ngx_uint_t flags)
     return v;
 }
 
-
+/* 变量索引化，数组末端插入 */
 ngx_int_t
 ngx_http_get_variable_index(ngx_conf_t *cf, ngx_str_t *name)
 {
@@ -1763,6 +1764,7 @@ ngx_http_regex_compile(ngx_conf_t *cf, ngx_regex_compile_t *rc)
 
     rc->pool = cf->pool;
 
+
     if (ngx_regex_compile(rc) != NGX_OK) {
         ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "%V", &rc->err);
         return NULL;
@@ -1785,7 +1787,7 @@ ngx_http_regex_compile(ngx_conf_t *cf, ngx_regex_compile_t *rc)
         return re;
     }
 
-    rv = ngx_palloc(rc->pool, n * sizeof(ngx_http_regex_variable_t));
+    rv = ngx_palloc(rc->pool, n * sizeof(ngx_http_regex_variable_t));//分配named capture variable
     if (rv == NULL) {
         return NULL;
     }
@@ -1936,7 +1938,7 @@ ngx_http_variables_add_core_vars(ngx_conf_t *cf)
     return NGX_OK;
 }
 
-
+/* 初始化http变量 */
 ngx_int_t
 ngx_http_variables_init_vars(ngx_conf_t *cf)
 {
@@ -1953,7 +1955,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
     v = cmcf->variables.elts;
     key = cmcf->variables_keys->keys.elts;
 
-    for (i = 0; i < cmcf->variables.nelts; i++) {
+    for (i = 0; i < cmcf->variables.nelts; i++) {//初始化index variable的handler
 
         for (n = 0; n < cmcf->variables_keys->keys.nelts; n++) {
 
@@ -2013,6 +2015,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
             continue;
         }
 
+        /* 执行到此处说明index variable里有未定义的变量 */
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
                       "unknown \"%V\" variable", &v[i].name);
 
@@ -2041,7 +2044,7 @@ ngx_http_variables_init_vars(ngx_conf_t *cf)
     hash.temp_pool = NULL;
 
     if (ngx_hash_init(&hash, cmcf->variables_keys->keys.elts,
-                      cmcf->variables_keys->keys.nelts)
+                      cmcf->variables_keys->keys.nelts) //hash http variables
         != NGX_OK)
     {
         return NGX_ERROR;

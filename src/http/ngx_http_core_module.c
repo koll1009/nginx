@@ -3941,6 +3941,7 @@ ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
+/* root ½âÎö */
 static char *
 ngx_http_core_root(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {

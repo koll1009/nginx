@@ -20,6 +20,7 @@ typedef struct {
 } ngx_hash_elt_t;
 
 
+/* 哈希表 */
 typedef struct {
     ngx_hash_elt_t  **buckets;
     ngx_uint_t        size;
@@ -30,6 +31,7 @@ typedef struct {
     ngx_hash_t        hash;
     void             *value;
 } ngx_hash_wildcard_t;
+
 
 
 typedef struct {
@@ -71,7 +73,7 @@ typedef struct {
 #define NGX_HASH_WILDCARD_KEY     1
 #define NGX_HASH_READONLY_KEY     2
 
-
+/* 初始化hash table使用的array */
 typedef struct {
     ngx_uint_t        hsize;
 
@@ -79,7 +81,7 @@ typedef struct {
     ngx_pool_t       *temp_pool;
 
     ngx_array_t       keys;
-    ngx_array_t      *keys_hash;
+    ngx_array_t      *keys_hash;//array初始化时，用于重复性判断
 
     ngx_array_t       dns_wc_head;
     ngx_array_t      *dns_wc_head_hash;

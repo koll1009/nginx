@@ -15,9 +15,9 @@
 
 
 typedef struct {
-    u_char                     *ip;
-    u_char                     *pos;
-    ngx_http_variable_value_t  *sp;
+    u_char                     *ip; //指令
+    u_char                     *pos;//参数指针
+    ngx_http_variable_value_t  *sp; //变量栈
 
     ngx_str_t                   buf;
     ngx_str_t                   line;
@@ -52,8 +52,8 @@ typedef struct {
     void                       *main;
 
     unsigned                    compile_args:1;
-    unsigned                    complete_lengths:1;
-    unsigned                    complete_values:1;
+    unsigned                    complete_lengths:1;//1表示为完整的求length的指令
+    unsigned                    complete_values:1;//1表示为完整的执行求value的指令
     unsigned                    zero:1;
     unsigned                    conf_prefix:1;
     unsigned                    root_prefix:1;
@@ -123,7 +123,7 @@ typedef struct {
 
     uintptr_t                   test:1;
     uintptr_t                   negative_test:1;
-    uintptr_t                   uri:1;
+    uintptr_t                   uri:1; //1代表使用uri作为执行正则匹配的字符串
     uintptr_t                   args:1;
 
     /* add the r->args to the new arguments */

@@ -150,7 +150,7 @@ typedef struct {
 
     ngx_hash_t                 variables_hash;
 
-    ngx_array_t                variables;       /* ngx_http_variable_t */
+    ngx_array_t                variables;       /* 保存索引后的变量 ngx_http_variable_t */
     ngx_uint_t                 ncaptures;
 
     ngx_uint_t                 server_names_hash_max_size;

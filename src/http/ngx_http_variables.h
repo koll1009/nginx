@@ -31,12 +31,12 @@ typedef ngx_int_t (*ngx_http_get_variable_pt) (ngx_http_request_t *r,
 #define NGX_HTTP_VAR_INDEXED      4
 #define NGX_HTTP_VAR_NOHASH       8
 
-
+/* http±‰¡ø */
 struct ngx_http_variable_s {
     ngx_str_t                     name;   /* must be first to build the hash */
     ngx_http_set_variable_pt      set_handler;
     ngx_http_get_variable_pt      get_handler;
-    uintptr_t                     data;
+    uintptr_t                     data;   //param of handler
     ngx_uint_t                    flags;
     ngx_uint_t                    index;
 };
@@ -68,12 +68,13 @@ typedef struct {
 } ngx_http_regex_variable_t;
 
 
+/* http module ????? */
 typedef struct {
-    ngx_regex_t                  *regex;
+    ngx_regex_t                  *regex;//pattern compile????regex context
     ngx_uint_t                    ncaptures;
-    ngx_http_regex_variable_t    *variables;
-    ngx_uint_t                    nvariables;
-    ngx_str_t                     name;
+    ngx_http_regex_variable_t    *variables;//named capture variable
+    ngx_uint_t                    nvariables;//size of named capture variable
+    ngx_str_t                     name;//pattern
 } ngx_http_regex_t;
 
 

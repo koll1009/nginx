@@ -317,7 +317,7 @@ ngx_http_set_predicate_slot(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     return NGX_CONF_OK;
 }
 
-/* 扫描$符的数量统计变量 */
+/* 扫描$符，统计变量数量 */
 ngx_uint_t
 ngx_http_script_variables_count(ngx_str_t *value)
 {
@@ -332,7 +332,7 @@ ngx_http_script_variables_count(ngx_str_t *value)
     return n;
 }
 
-/* 编译变量 */
+/* 编译带变量的脚本 */
 ngx_int_t
 ngx_http_script_compile(ngx_http_script_compile_t *sc)
 {
@@ -393,7 +393,7 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
                 name.data = &sc->source->data[i];
             }
 
-            for ( /* void */ ; i < sc->source->len; i++, name.len++) {
+            for ( /* void */ ; i < sc->source->len; i++, name.len++) {//取变量名
                 ch = sc->source->data[i];
 
                 if (ch == '}' && bracket) {
@@ -402,7 +402,7 @@ ngx_http_script_compile(ngx_http_script_compile_t *sc)
                     break;
                 }
 
-                if ((ch >= 'A' && ch <= 'Z')//跳过变量名的组成字符
+                if ((ch >= 'A' && ch <= 'Z')
                     || (ch >= 'a' && ch <= 'z')
                     || (ch >= '0' && ch <= '9')
                     || ch == '_')
@@ -485,7 +485,7 @@ invalid_variable:
     return NGX_ERROR;
 }
 
-
+/* 运行脚本指令 */
 u_char *
 ngx_http_script_run(ngx_http_request_t *r, ngx_str_t *value,
     void *code_lengths, size_t len, void *code_values)
@@ -511,6 +511,7 @@ ngx_http_script_run(ngx_http_request_t *r, ngx_str_t *value,
     e.request = r;
     e.flushed = 1;
 
+    /* 执行length code,计算需要的内存长度 */
     while (*(uintptr_t *) e.ip) {
         lcode = *(ngx_http_script_len_code_pt *) e.ip;
         len += lcode(&e);
@@ -526,6 +527,7 @@ ngx_http_script_run(ngx_http_request_t *r, ngx_str_t *value,
     e.ip = code_values;
     e.pos = value->data;
 
+    /* 执行脚本指令，然后value中就保存了变量解析后的完整值 */
     while (*(uintptr_t *) e.ip) {
         code = *(ngx_http_script_code_pt *) e.ip;
         code((ngx_http_script_engine_t *) &e);
@@ -786,7 +788,7 @@ ngx_http_script_add_var_code(ngx_http_script_compile_t *sc, ngx_str_t *name)
         return NGX_ERROR;
     }
 
-    code->code = (ngx_http_script_code_pt) ngx_http_script_copy_var_len_code;
+    code->code = (ngx_http_script_code_pt) ngx_http_script_copy_var_len_code;//计算变量长度的指令
     code->index = (uintptr_t) index;
 
     code = ngx_http_script_add_code(*sc->values,
@@ -796,7 +798,7 @@ ngx_http_script_add_var_code(ngx_http_script_compile_t *sc, ngx_str_t *name)
         return NGX_ERROR;
     }
 
-    code->code = ngx_http_script_copy_var_code;
+    code->code = ngx_http_script_copy_var_code;//复制变量的指令
     code->index = (uintptr_t) index;
 
     return NGX_OK;
@@ -907,6 +909,7 @@ ngx_http_script_start_args_code(ngx_http_script_engine_t *e)
 
 #if (NGX_PCRE)
 
+/* 执行正则匹配，解析capture variable完毕，计算complex code对应的变量长度 */
 void
 ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
 {
@@ -933,7 +936,7 @@ ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
         e->line.data = e->sp->data;
     }
 
-    rc = ngx_http_regex_exec(r, code->regex, &e->line);
+    rc = ngx_http_regex_exec(r, code->regex, &e->line);//执行正则匹配，并且完成named capture变量的初始化
 
     if (rc == NGX_DECLINED) {
         if (e->log || (r->connection->log->log_level & NGX_LOG_DEBUG_HTTP)) {

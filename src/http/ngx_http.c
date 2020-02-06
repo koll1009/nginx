@@ -313,7 +313,7 @@ ngx_http_block(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
-    if (ngx_http_variables_init_vars(cf) != NGX_OK) {
+    if (ngx_http_variables_init_vars(cf) != NGX_OK) {//初始化http变量
         return NGX_CONF_ERROR;
     }
 

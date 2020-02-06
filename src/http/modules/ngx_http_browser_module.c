@@ -395,7 +395,7 @@ ngx_http_msie_variable(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     return NGX_OK;
 }
 
-
+/* browse moduleÌí¼Óhttp variable */
 static ngx_int_t
 ngx_http_browser_add_variable(ngx_conf_t *cf)
 {
