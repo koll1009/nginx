@@ -911,7 +911,7 @@ ngx_http_script_start_args_code(ngx_http_script_engine_t *e)
 
 /* 执行正则匹配，解析capture variable完毕，计算complex code对应的变量长度 */
 void
-ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
+ ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
 {
     size_t                         len;
     ngx_int_t                      rc;
@@ -1068,6 +1068,7 @@ ngx_http_script_regex_start_code(ngx_http_script_engine_t *e)
 }
 
 
+/* complex code已经执行完毕，e.buf保存着执行code后的返回值 */
 void
 ngx_http_script_regex_end_code(ngx_http_script_engine_t *e)
 {

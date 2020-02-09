@@ -505,7 +505,7 @@ ngx_http_init_phase_handlers(ngx_conf_t *cf, ngx_http_core_main_conf_t *cmcf)
             break;
 
         case NGX_HTTP_POST_REWRITE_PHASE:
-            if (use_rewrite) {
+            if (use_rewrite) {//location rewrite phase有handler,所以要重新执行find location
                 ph->checker = ngx_http_core_post_rewrite_phase;
                 ph->next = find_config_index;
                 n++;

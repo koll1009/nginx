@@ -434,7 +434,7 @@ ngx_http_rewrite(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
             return NGX_CONF_ERROR;
         }
 
-        *code = NULL;
+        *code = NULL; //last code
     }
 
     regex->next = (u_char *) lcf->codes->elts + lcf->codes->nelts

@@ -125,7 +125,7 @@ typedef ngx_int_t (*ngx_http_phase_handler_pt)(ngx_http_request_t *r,
 struct ngx_http_phase_handler_s {
     ngx_http_phase_handler_pt  checker;
     ngx_http_handler_pt        handler;
-    ngx_uint_t                 next;
+    ngx_uint_t                 next;//next phase index
 };
 
 
@@ -174,7 +174,7 @@ typedef struct {
     ngx_array_t                 server_names;
 
     /* server ctx */
-    ngx_http_conf_ctx_t        *ctx;
+    ngx_http_conf_ctx_t        *ctx; //server block¶ÔÓ¦µÄmain/server/location config context
 
     ngx_str_t                   server_name;
 

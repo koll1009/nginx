@@ -932,6 +932,7 @@ ngx_http_core_rewrite_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
 }
 
 
+/* location find */
 ngx_int_t
 ngx_http_core_find_config_phase(ngx_http_request_t *r,
     ngx_http_phase_handler_t *ph)
@@ -2615,7 +2616,7 @@ ngx_http_cleanup_add(ngx_http_request_t *r, size_t size)
     return cln;
 }
 
-
+/* parse server block  */
 static char *
 ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 {
@@ -2636,7 +2637,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     http_ctx = cf->ctx;
-    ctx->main_conf = http_ctx->main_conf;
+    ctx->main_conf = http_ctx->main_conf;//所有server共用main configuration
 
     /* the server{}'s srv_conf */
 
@@ -2701,7 +2702,7 @@ ngx_http_core_server(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     cf->ctx = ctx;
     cf->cmd_type = NGX_HTTP_SRV_CONF;
 
-    rv = ngx_conf_parse(cf, NULL);
+    rv = ngx_conf_parse(cf, NULL);//解析
 
     *cf = pcf;
 
@@ -2794,17 +2795,17 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
         mod = value[1].data;
         name = &value[2];
 
-        if (len == 1 && mod[0] == '=') {
+        if (len == 1 && mod[0] == '=') {//location = uri精确匹配
 
             clcf->name = *name;
             clcf->exact_match = 1;
 
-        } else if (len == 2 && mod[0] == '^' && mod[1] == '~') {
+        } else if (len == 2 && mod[0] == '^' && mod[1] == '~') {//字符串匹配，在正则之前搜索
 
             clcf->name = *name;
             clcf->noregex = 1;
 
-        } else if (len == 1 && mod[0] == '~') {
+        } else if (len == 1 && mod[0] == '~') {/* location ~/~* regex_pattern */
 
             if (ngx_http_core_regex_location(cf, clcf, name, 0) != NGX_OK) {
                 return NGX_CONF_ERROR;
@@ -2860,7 +2861,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 
         } else {
 
-            clcf->name = *name;
+            clcf->name = *name;//路径字符串匹配，优先级在正则之后
 
             if (name->data[0] == '@') {
                 clcf->named = 1;
@@ -2934,6 +2935,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
 }
 
 
+/* 使用正则表达式匹配的location */
 static ngx_int_t
 ngx_http_core_regex_location(ngx_conf_t *cf, ngx_http_core_loc_conf_t *clcf,
     ngx_str_t *regex, ngx_uint_t caseless)
@@ -2954,7 +2956,7 @@ ngx_http_core_regex_location(ngx_conf_t *cf, ngx_http_core_loc_conf_t *clcf,
     rc.options = caseless;
 #endif
 
-    clcf->regex = ngx_http_regex_compile(cf, &rc);
+    clcf->regex = ngx_http_regex_compile(cf, &rc);//编译正则表达式
     if (clcf->regex == NULL) {
         return NGX_ERROR;
     }
