@@ -666,6 +666,9 @@ ngx_http_merge_locations(ngx_conf_t *cf, ngx_queue_t *locations,
 }
 
 
+/* locations按照规则排序，并且把no name/named/regex locations分别独立保存，此后location queue中只剩下精确匹配和
+ * uri前缀匹配的location
+ */
 static ngx_int_t
 ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     ngx_http_core_loc_conf_t *pclcf)
@@ -695,6 +698,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
     r = 0;
 #endif
 
+    //递归整理location queue
     for (q = ngx_queue_head(locations);
          q != ngx_queue_sentinel(locations);
          q = ngx_queue_next(q))
@@ -709,11 +713,11 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 
 #if (NGX_PCRE)
 
-        if (clcf->regex) {
+        if (clcf->regex) { 
             r++;
 
             if (regex == NULL) {
-                regex = q;
+                regex = q; //指向first regex location
             }
 
             continue;
@@ -725,21 +729,22 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
             n++;
 
             if (named == NULL) {
-                named = q;
+                named = q; //指向first named location
             }
 
             continue;
         }
 
-        if (clcf->noname) {
+        if (clcf->noname) { //跳过noname location
             break;
         }
     }
 
     if (q != ngx_queue_sentinel(locations)) {
-        ngx_queue_split(locations, q, &tail);
+        ngx_queue_split(locations, q, &tail); //把no name location保存到tail queue中
     }
 
+    /* 把named location保存到srv的named_locations数组中，然后split */
     if (named) {
         clcfp = ngx_palloc(cf->pool,
                            (n + 1) * sizeof(ngx_http_core_loc_conf_t **));
@@ -765,6 +770,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 
 #if (NGX_PCRE)
 
+    /* 把regex location保存到regex_locations数组中 然后split */
     if (regex) {
 
         clcfp = ngx_palloc(cf->pool,
@@ -795,6 +801,7 @@ ngx_http_init_locations(ngx_conf_t *cf, ngx_http_core_srv_conf_t *cscf,
 }
 
 
+/* 初始化 */
 static ngx_int_t
 ngx_http_init_static_location_trees(ngx_conf_t *cf,
     ngx_http_core_loc_conf_t *pclcf)
@@ -826,13 +833,13 @@ ngx_http_init_static_location_trees(ngx_conf_t *cf,
         }
     }
 
-    if (ngx_http_join_exact_locations(cf, locations) != NGX_OK) {
+    if (ngx_http_join_exact_locations(cf, locations) != NGX_OK) {//去重
         return NGX_ERROR;
     }
 
     ngx_http_create_locations_list(locations, ngx_queue_head(locations));
 
-    pclcf->static_locations = ngx_http_create_locations_tree(cf, locations, 0);
+    pclcf->static_locations = ngx_http_create_locations_tree(cf, locations, 0);//创建三叉排序树
     if (pclcf->static_locations == NULL) {
         return NGX_ERROR;
     }
@@ -887,7 +894,9 @@ ngx_http_add_location(ngx_conf_t *cf, ngx_queue_t **locations,
     return NGX_OK;
 }
 
-
+/* location排序,规则如下
+ * string cmp > regex > named(@location) > noname
+ */
 static ngx_int_t
 ngx_http_cmp_locations(const ngx_queue_t *one, const ngx_queue_t *two)
 {
@@ -1013,7 +1022,7 @@ ngx_http_create_locations_list(ngx_queue_t *locations, ngx_queue_t *q)
 
     lq = (ngx_http_location_queue_t *) q;
 
-    if (lq->inclusive == NULL) {
+    if (lq->inclusive == NULL) { //跳过exact location
         ngx_http_create_locations_list(locations, ngx_queue_next(q));
         return;
     }
@@ -1058,7 +1067,7 @@ ngx_http_create_locations_list(ngx_queue_t *locations, ngx_queue_t *q)
 }
 
 
-/*
+/* 把所有的location创建成一棵
  * to keep cache locality for left leaf nodes, allocate nodes in following
  * order: node, left subtree, right subtree, inclusive subtree
  */
@@ -1072,7 +1081,7 @@ ngx_http_create_locations_tree(ngx_conf_t *cf, ngx_queue_t *locations,
     ngx_http_location_queue_t      *lq;
     ngx_http_location_tree_node_t  *node;
 
-    q = ngx_queue_middle(locations);
+    q = ngx_queue_middle(locations);//取中间节点
 
     lq = (ngx_http_location_queue_t *) q;
     len = lq->name->len - prefix;

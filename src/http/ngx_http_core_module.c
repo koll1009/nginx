@@ -945,7 +945,7 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
     r->content_handler = NULL;
     r->uri_changed = 0;
 
-    rc = ngx_http_core_find_location(r);
+    rc = ngx_http_core_find_location(r);//找到请求对应的location
 
     if (rc == NGX_ERROR) {
         ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
@@ -964,7 +964,7 @@ ngx_http_core_find_config_phase(ngx_http_request_t *r,
                    (clcf->noname ? "*" : (clcf->exact_match ? "=" : "")),
                    &clcf->name);
 
-    ngx_http_update_location_config(r);
+    ngx_http_update_location_config(r);//使用搜索到的location配置更新http request
 
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http cl:%O max:%O",
@@ -1517,7 +1517,7 @@ ngx_http_core_find_location(ngx_http_request_t *r)
 
     pclcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
-    rc = ngx_http_core_find_static_location(r, pclcf->static_locations);
+    rc = ngx_http_core_find_static_location(r, pclcf->static_locations);//搜索三叉树
 
     if (rc == NGX_AGAIN) {
 
@@ -2760,7 +2760,7 @@ ngx_http_core_location(ngx_conf_t *cf, ngx_command_t *cmd, void *dummy)
     }
 
     pctx = cf->ctx;
-    ctx->main_conf = pctx->main_conf;
+    ctx->main_conf = pctx->main_conf; 
     ctx->srv_conf = pctx->srv_conf;
 
     ctx->loc_conf = ngx_pcalloc(cf->pool, sizeof(void *) * ngx_http_max_module);
