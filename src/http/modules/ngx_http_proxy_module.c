@@ -558,7 +558,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
     ngx_http_proxy_ctx_t       *ctx;
     ngx_http_proxy_loc_conf_t  *plcf;
 
-    if (ngx_http_upstream_create(r) != NGX_OK) {
+    if (ngx_http_upstream_create(r) != NGX_OK) { //´´½¨upstream
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -581,7 +581,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
 #endif
 
     } else {
-        if (ngx_http_proxy_eval(r, ctx, plcf) != NGX_OK) {
+        if (ngx_http_proxy_eval(r, ctx, plcf) != NGX_OK) {//½âÎöproxy url
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
     }

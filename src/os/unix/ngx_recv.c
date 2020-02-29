@@ -123,6 +123,8 @@ ngx_unix_recv(ngx_connection_t *c, u_char *buf, size_t size)
 
 #else /* ! NGX_HAVE_KQUEUE */
 
+
+/* linux read from socket */
 ssize_t
 ngx_unix_recv(ngx_connection_t *c, u_char *buf, size_t size)
 {

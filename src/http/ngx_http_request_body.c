@@ -18,7 +18,7 @@ static ngx_int_t ngx_http_read_discarded_request_body(ngx_http_request_t *r);
 static ngx_int_t ngx_http_test_expect(ngx_http_request_t *r);
 
 
-/*
+/* 
  * on completion ngx_http_read_client_request_body() adds to
  * r->request_body->bufs one or two bufs:
  *    *) one memory buf that was preread in r->header_in;
@@ -55,7 +55,7 @@ ngx_http_read_client_request_body(ngx_http_request_t *r,
 
     r->request_body = rb;
 
-    if (r->headers_in.content_length_n < 0) {
+    if (r->headers_in.content_length_n < 0) {//no http request body
         post_handler(r);
         return NGX_OK;
     }

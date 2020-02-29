@@ -11,9 +11,9 @@
 
 
 typedef struct {
-    ngx_str_t                name;
-    ngx_array_t             *lengths;
-    ngx_array_t             *values;
+    ngx_str_t                name; //index value,如果不含变量则为实际index page
+    ngx_array_t             *lengths;//保存index value变量的length code
+    ngx_array_t             *values;//保存index value变量的value code
 } ngx_http_index_t;
 
 
@@ -109,10 +109,12 @@ ngx_http_index_handler(ngx_http_request_t *r)
     ngx_http_index_loc_conf_t    *ilcf;
     ngx_http_script_len_code_pt   lcode;
 
+    //请求非默认页面，跳过该module
     if (r->uri.data[r->uri.len - 1] != '/') {
         return NGX_DECLINED;
     }
 
+    //check request method
     if (!(r->method & (NGX_HTTP_GET|NGX_HTTP_HEAD|NGX_HTTP_POST))) {
         return NGX_DECLINED;
     }
@@ -156,7 +158,7 @@ ngx_http_index_handler(ngx_http_request_t *r)
 
             /* 16 bytes are preallocation */
 
-            reserve = len + 16;
+            reserve = len + 16;//需要整合root path
         }
 
         if (reserve > allocated) {
@@ -237,7 +239,7 @@ ngx_http_index_handler(ngx_http_request_t *r)
                 dir_tested = 1;
             }
 
-            if (of.err == NGX_ENOENT) {
+            if (of.err == NGX_ENOENT) {//no such file,continue
                 continue;
             }
 
@@ -414,7 +416,7 @@ ngx_http_index_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     return NGX_CONF_OK;
 }
 
-
+/* 初始化phase handler */
 static ngx_int_t
 ngx_http_index_init(ngx_conf_t *cf)
 {
@@ -436,6 +438,7 @@ ngx_http_index_init(ngx_conf_t *cf)
 
 /* TODO: warn about duplicate indices */
 
+/* index解析函数 */
 static char *
 ngx_http_index_set_index(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
@@ -457,7 +460,7 @@ ngx_http_index_set_index(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     for (i = 1; i < cf->args->nelts; i++) {
 
-        if (value[i].data[0] == '/' && i != cf->args->nelts - 1) {
+        if (value[i].data[0] == '/' && i != cf->args->nelts - 1) {//只有最后一个index才可以是absolute path
             ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
                                "only the last index in \"index\" directive "
                                "should be absolute");
@@ -507,7 +510,7 @@ ngx_http_index_set_index(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         sc.complete_lengths = 1;
         sc.complete_values = 1;
 
-        if (ngx_http_script_compile(&sc) != NGX_OK) {
+        if (ngx_http_script_compile(&sc) != NGX_OK) {//编译index value
             return NGX_CONF_ERROR;
         }
     }

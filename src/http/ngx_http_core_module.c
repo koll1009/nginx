@@ -1077,7 +1077,7 @@ ngx_http_core_access_phase(ngx_http_request_t *r, ngx_http_phase_handler_t *ph)
     ngx_int_t                  rc;
     ngx_http_core_loc_conf_t  *clcf;
 
-    if (r != r->main) {
+    if (r != r->main) {//只有main request need check access
         r->phase_handler = ph->next;
         return NGX_AGAIN;
     }
@@ -2484,7 +2484,7 @@ ngx_http_internal_redirect(ngx_http_request_t *r,
         return NGX_DONE;
     }
 
-    r->uri = *uri;
+    r->uri = *uri; //设置为跳转后的uri
 
     if (args) {
         r->args = *args;
@@ -2496,7 +2496,7 @@ ngx_http_internal_redirect(ngx_http_request_t *r,
     ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "internal redirect: \"%V?%V\"", uri, &r->args);
 
-    ngx_http_set_exten(r);
+    ngx_http_set_exten(r);//取uri里的file extension
 
     /* clear the modules contexts */
     ngx_memzero(r->ctx, sizeof(void *) * ngx_http_max_module);
@@ -2504,7 +2504,7 @@ ngx_http_internal_redirect(ngx_http_request_t *r,
     cscf = ngx_http_get_module_srv_conf(r, ngx_http_core_module);
     r->loc_conf = cscf->ctx->loc_conf;
 
-    ngx_http_update_location_config(r);
+    ngx_http_update_location_config(r);//根据location的配置更新request
 
 #if (NGX_HTTP_CACHE)
     r->cache = NULL;
